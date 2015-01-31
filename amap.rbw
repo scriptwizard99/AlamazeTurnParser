@@ -23,12 +23,13 @@
 =end
 
 require 'tk'
+require_relative 'emmyTool'
 #require 'win32/sound'
 #include Win32
 
 $debug=0
 
-VERSION="0.3.0"
+VERSION="0.3.1"
 BOX_HEIGHT=14
 BOX_WIDTH=BOX_HEIGHT
 HISTORY_ALL=0
@@ -72,6 +73,7 @@ $kingdomColors = {
     'WI' => '#386197',
     'HU' => '#943634',
     'NE' => 'grey',
+    'XX' => 'black',
     'black' => 'black',
     'unknown' => '#f8be8f',
     EXPLORED_MARKER => EXPLORED_COLOR
@@ -87,6 +89,8 @@ $terrainHash = {
 }
 
 $regionMap = {
+   '-1' => 'unknown',
+    '0' => 'destroyed',
     '1' => 'OAKENDELL',
     '2' => 'THE NORTHERN MISTS',
     '3' => 'THE TALKING MOUNTAINS',
@@ -115,7 +119,8 @@ $kingdomNameMap = {
     'UN' => 'Underworld',
     'WA' => 'Warlock',
     'WI' => 'Witchlord',
-    'NE' => 'Neutral'
+    'NE' => 'Neutral',
+    'XX' => 'Destroyed'
 }
 
 $mapSquares = [
@@ -181,7 +186,8 @@ class RegionList
    def getNumControlled(banner)
       count = 0
       @list.keys.each do |regNum|
-         count += 1 if fixBanner(@list[regNum].getLatestController[0..1]) == banner
+         next unless controller = @list[regNum].getLatestController
+         count += 1 if fixBanner(controller[0..1]) == banner
       end
       return count
    end
@@ -216,6 +222,7 @@ class RegionList
       appendTextWithTag("Region Statistics\n\n", TEXT_TAG_TITLE)
       printHeader
       @list.keys.each do |index|
+         next if index.to_i < 1
          appendText(@list[index].toString)
       end
       showRegionalLeaders
@@ -279,7 +286,13 @@ class Region
    end
    def getLatestController
       lastTurn = getTurnList.last
+      return nil if  lastTurn == nil or @turnInfo[lastTurn] == nil
       return  @turnInfo[lastTurn][:owner]
+   end
+   def getLatestReaction
+      lastTurn = getTurnList.last
+      return nil if  lastTurn == nil or @turnInfo[lastTurn] == nil
+      return  @turnInfo[lastTurn][:reaction]
    end
    def toString
       lastTurn = getTurnList.last
@@ -1416,6 +1429,7 @@ def showRegionalLeaders
    appendTextWithTag("\n\nWho has the most regions?\n",TEXT_TAG_TITLE)
    leaders=Array.new
    $kingdomNameMap.keys.each do |banner|
+      next if banner == 'XX'
       count = $regionList.getNumControlled(banner)
       next if count == 0
       line=sprintf("%9d  %s\n", count, $kingdomNameMap[banner])
@@ -1540,6 +1554,16 @@ def showPopCenterData(area,turn)
       else
          appendTextWithTag( line , TEXT_TAG_STALE)
       end
+
+      ### TODO
+      regionNum=p.getRegion
+      region=$regionList.getRegionByNum(regionNum)
+      return if region.nil?
+      react=region.getLatestReaction
+      et=EmmyTool.new(p.getType,nil,react)
+      val=et.getNeutralScore
+      appendText("Neutral Score = #{val}\n")
+      ### TODO
 end
 
 def showPopCenter(area,showHeader)
@@ -1576,6 +1600,7 @@ def showProductionStatsByRegion
    appendTextWithTag(line,TEXT_TAG_HEADING)
    appendTextWithTag("------------------------  ---------- ----------\n",TEXT_TAG_HEADING)
    $regionMap.keys.sort_by(&:to_i).each do |region|
+      next if region < 1
       #pcList = $popCenterList.getByRegion(region)
       (food,gold) = $popCenterList.getCurrentProductionByRegionAndKingdom(region, nil)
       line=sprintf("%-25s %10s %10s\n", $regionMap[region], food, gold)
@@ -1589,6 +1614,8 @@ def showPopCentersByRegion
    unHighlight
    appendTextWithTag("\nPopulation Centers by Region:\n", TEXT_TAG_TITLE)
    $regionMap.keys.sort_by(&:to_i).each do |region|
+      #next if region == ' ' or region == 'X';
+      next if region.to_i < 1
       controller=$regionList.getLatestController(region)
       appendTextWithTag("\n\n#{$regionMap[region]} Controlled by #{controller}\n",TEXT_TAG_HEADING)
       $popCenterList.printHeader

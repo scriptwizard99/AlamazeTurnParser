@@ -36,7 +36,7 @@ if filename.nil?
    exit 1
 end
 
-VERSION="0.3.0"
+VERSION="0.3.1"
 
 class AlamazeTurnParser
 

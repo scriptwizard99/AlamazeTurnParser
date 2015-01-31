@@ -23,9 +23,15 @@ def shrinkImage(image)
    return newImage
 end
 
+def setupBM
+   $bigBM = TkBitmapImage.new('file'=>"./ABig.xbm", 'foreground' => 'red')
+   $smallBM = TkBitmapImage.new('file'=>"./ASmall.xbm", 'foreground' => 'red')
+   #$bigBM.file = "./city.xbm"
+end
+
 def setupImage
    $bigImage = TkPhotoImage.new
-   $bigImage.file = "../alamaze-resurgent.gif"
+   $bigImage.file = "./alamaze-resurgent.gif"
    $bigW = $bigImage.width
    $bigH = $bigImage.height
 
@@ -159,6 +165,7 @@ def initOffsets
    $offsets[:big][:boxX]=80.5
    $offsets[:big][:boxY]=60.45
    $offsets[:big][:tag]='big'
+   $offsets[:big][:bm]=$bigBM
    $offsets[:big][:font]= TkFont.new( "size" => '30', "weight" => "bold")
    $offsets[:small] = Hash.new
    $offsets[:small][:frameX]=17
@@ -166,6 +173,7 @@ def initOffsets
    $offsets[:small][:boxX]=26.8
    $offsets[:small][:boxY]=20.1
    $offsets[:small][:tag]='small'
+   $offsets[:small][:bm]=$smallBM
    $offsets[:small][:font]= TkFont.new( "size" => '12', "weight" => "bold")
 end
 
@@ -189,12 +197,17 @@ end
 
 def addMarker(size,x,y,marker)
 
+   # Center
    x = $offsets[size][:frameX] + ($offsets[size][:boxX]*x) + $offsets[size][:boxX]/2.0
    y = $offsets[size][:frameY] + ($offsets[size][:boxY]*y) + $offsets[size][:boxY]/2.0
 
    t = TkcText.new($canvas, x, y, 'text' => marker, 'tags' => [marker,'Marker', $offsets[size][:tag] ],
                    'fill' => 'black', 'font' => $offsets[size][:font] )
    #t.bind('1', proc { boxClick loc } )
+
+   TkcImage.new($canvas,x,y, 'image' => $offsets[size][:bm] , :tags => $offsets[size][:tag] )
+
+   drawArmy(size,x,y)
 
 end
 
@@ -206,6 +219,18 @@ def addMapMarkers(loc,marker)
 end
 
 
+def drawArmy(size,x,y)
+   p = TkcPolygon.new($canvas, 
+                      x +  $offsets[size][:boxX]/2.0, y +  $offsets[size][:boxY]/2.2,
+                      x -  $offsets[size][:boxX]/4.0, y +  $offsets[size][:boxY]/3.5,
+                      x -  $offsets[size][:boxX]/2.0, y,
+                      x -  $offsets[size][:boxX]/4.0, y -  $offsets[size][:boxY]/3.5,
+                      x +  $offsets[size][:boxX]/2.0, y -  $offsets[size][:boxY]/2.2,
+                      x -  $offsets[size][:boxX]/4.0, y,
+                      :smooth => 'true',
+                      :fill => 'green', :outline => 'black', 
+                      :tags => $offsets[size][:tag] )
+end
 
 
 #---------------------------------------------------------------------------
@@ -216,11 +241,16 @@ programName="Alamaze Map Test"
 $root = TkRoot.new { title programName }
 
 $offsets=0
+setupBM
 initOffsets
 frame = TkFrame.new($root)
 setupImage
 createCanvas(frame)
 frame.pack(:expand => 'yes', :fill => 'both')
 zoomOut
+
+   TkcImage.new($canvas,40,40, 'image' => $bigBM, :tags => 'big')
+   $bigBM.configure('foreground' => 'blue')
+   TkcImage.new($canvas,80,80, 'image' => $bigBM, :tags => 'big')
 
 Tk.mainloop

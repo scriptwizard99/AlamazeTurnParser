@@ -28,7 +28,7 @@ require 'tk'
 
 $debug=0
 
-VERSION="0.2.0"
+VERSION="0.3.0"
 BOX_HEIGHT=14
 BOX_WIDTH=BOX_HEIGHT
 HISTORY_ALL=0
@@ -43,6 +43,9 @@ EMISSARY_ARROW_WIDTH=4
 ARMY_ARROW_COLOR=EMISSARY_ARROW_COLOR
 ARMY_ARROW_WIDTH=EMISSARY_ARROW_WIDTH
 
+EXPLORED_COLOR='white'
+EXPLORED_MARKER='#'
+
 TEXT_TAG_TITLE='title'
 TEXT_TAG_HEADING='heading'
 TEXT_TAG_NORMAL='normal'
@@ -50,6 +53,29 @@ TEXT_TAG_STALE='stale'
 TEXT_TAG_GOOD='good'
 TEXT_TAG_WARNING='warning'
 TEXT_TAG_DANGER='danger'
+
+$kingdomColors = {
+    'AN' => '#35d5ff',
+    'BL' => 'black',
+    'DA' => '#934000',
+    'DE' => '#ff2994',
+    'DW' => '#ff9901',
+    'EL' => '#00fd00',
+    'GI' => '#ffffff',
+    'GN' => '#fefe00',
+    'RA' => '#6900ff',
+    'RD' => '#fc0000',
+    'SO' => '#4e80bb',
+    'TR' => '#90ce4e',
+    'UN' => '#e0b3b2',
+    'WA' => '#9700ca',
+    'WI' => '#386197',
+    'HU' => '#943634',
+    'NE' => 'grey',
+    'black' => 'black',
+    'unknown' => '#f8be8f',
+    EXPLORED_MARKER => EXPLORED_COLOR
+}
 
 $terrainHash = { 
     'p' => '#d6eed1',
@@ -121,22 +147,17 @@ $mapSquares = [
     "mmmmmmmmddpppppdddpppddddd"
 ]
 
-@MAP
+#@MAP
 $canvas
 $textBox
 $history = TkVariable.new
 $cursorLoc = TkVariable.new
 $myGameInfoText = TkVariable.new
-$kingdoms = Hash.new
-$emissaries = Hash.new
-$armies = Hash.new
-$turns = Hash.new
-$currentTurn = 0
+$textWindow = nil
 
-$gameNumber = nil
-$myKingdom = nil
-$infoData = Array.new
-$influence = Array.new
+
+$currentTopTag = 'small'
+
 
 # New OO stuff
 $areaList = nil
@@ -201,6 +222,18 @@ class RegionList
       tagText("FRIENDLY", TEXT_TAG_GOOD)
       tagText("HOSTILE", TEXT_TAG_DANGER)
    end
+   def saveDataToFile(ofile)
+      @list.each do |area,region|
+            region.saveDataToFile(ofile)
+      end
+   end
+   def getLatestController(num)
+      if @list[num] == nil
+         appendTextWithTag("Error: No region number[#{num}]\n",TEXT_TAG_DANGER)
+         return nil
+      end
+      return @list[num].getLatestController
+   end
 end # class RegionList
 
 #--------------------------------------------------------------------------
@@ -235,7 +268,7 @@ class Region
          @turnInfo[turn][:reaction] = reaction
          @turnInfo[turn][:owner] = owner.strip
       else
-         appendTextWithTag("WARNING: Region #{@name} already has info for turn #{turn}. Ignoring extra data \n",TEXT_TAG_WARNING) unless $debug.to_i == 0
+         appendTextWithTag("WARNING: Region #{@name} already has info for turn #{turn}. Ignoring extra data \n",TEXT_TAG_WARNING) if $debug.to_i == 1
       end
    end
    def getTurnList
@@ -255,6 +288,14 @@ class Region
               @turnInfo[lastTurn][:reaction], @turnInfo[lastTurn][:owner] )
       return line
    end
+   def saveDataToFile(ofile)
+      getTurnList.each do |turn|
+         r=@turnInfo[turn]
+         record=[turn,"R",'Self',@name,@number,r[:reaction],r[:owner]].join(',')
+         ofile.puts record
+      end
+   end
+
 end # class Region
 
 #--------------------------------------------------------------------------
@@ -262,36 +303,47 @@ end # class Region
 #--------------------------------------------------------------------------
 class AreaList
    def initialize
-      @list=Hash.new
+      @bigList=Hash.new
+      @smallList=Hash.new
    end
-   def addBox(loc,box)
-      if @list[loc] == nil
-         @list[loc] = Area.new(loc,box)
+   def addBox(loc,smallBox,bigBox)
+      if @smallList[loc] == nil
+         @smallList[loc] = Area.new(loc,smallBox)
+         @bigList[loc] = Area.new(loc,bigBox)
       else
-         appendTextWithTag("WARNING: We already have a box at #{loc}. Skipping.\n",TEXT_TAG_WARNING)
+         appendTextWithTag("WARNING: We already have a box at #{loc}. Skipping.\n",TEXT_TAG_WARNING) if $debug.to_i == 1
+
+      end
+   end
+   def addtag(loc,tag)
+      if @smallList[loc] == nil
+         appendTextWithTag("WARNING: Cannot add tag #{tag} at #{loc}. Skipping.\n",TEXT_TAG_WARNING) if $debug.to_i == 1
+      else
+         @smallList[loc].addTag(tag)
+         @bigList[loc].addTag(tag)
       end
    end
    def addEmissary(id, loc)
-      if @list[loc] == nil
-         appendTextWithTag("WARNING: Cannot add #{id} at #{loc}. Skipping.\n",TEXT_TAG_WARNING)
+      if @smallList[loc] == nil
+         appendTextWithTag("WARNING: Cannot add emissary #{id} at #{loc}. Skipping.\n",TEXT_TAG_WARNING) if $debug.to_i == 1
       else
-         @list[loc].addEmissary(id)
+         @smallList[loc].addEmissary(id)
       end
    end
    def getEmissaryList(loc)
-      return nil if @list[loc] == nil
-      return @list[loc].getEmissaryList
+      return nil if @smallList[loc] == nil
+      return @smallList[loc].getEmissaryList
    end
    def addGroup(id, loc, turn, region)
-      if @list[loc] == nil
+      if @smallList[loc] == nil
          appendTextWithTag("WARNING: Group #{id} was somewhere non-specific in #{region} on turn #{turn}.\n",TEXT_TAG_WARNING)
       else
-         @list[loc].addGroup(id)
+         @smallList[loc].addGroup(id)
       end
    end
    def getGroupList(loc)
-      return nil if @list[loc] == nil
-      return @list[loc].getGroupList
+      return nil if @smallList[loc] == nil
+      return @smallList[loc].getGroupList
    end
 end # class AreaList
 
@@ -306,6 +358,9 @@ class Area
       @emissaryList=Hash.new
       @groupList=Hash.new
       #@region=nil
+   end
+   def addTag(tag)
+      @box.addtag(tag)
    end
    def getLoc
       return(@loc)
@@ -355,7 +410,17 @@ class ArtifactList
    end
    def showAll
       @list.each_index do |index|
-         appendText(@list[index].toString( nil ))
+         turn = @list[index].getTurnList.last
+         if turn == $currentTurn
+            appendText(@list[index].toString( nil ))
+         else
+            appendTextWithTag(@list[index].toString( nil ), TEXT_TAG_STALE)
+         end
+      end
+   end
+   def saveDataToFile(ofile)
+      @list.each do |artifact|
+            artifact.saveDataToFile(ofile)
       end
    end
 end # class ArtifactList
@@ -377,7 +442,7 @@ class Artifact
          @turnInfo[turn][:posessor] = posessor if posessor != nil
       else
          appendTextWithTag("WARNING: Artifact #{@shortName} already has info for turn #{turn}. Ignoring data from #{source}\n", 
-                            TEXT_TAG_WARNING) unless $debug.to_i == 0
+                            TEXT_TAG_WARNING) if $debug.to_i == 1
       end
    end
    def getShortName
@@ -408,7 +473,15 @@ class Artifact
                    @type,
                    @statusPts)
       return line
-    end # toString
+   end # toString
+   def saveDataToFile(ofile)
+      getTurnList.each do |turn|
+         artifact=@turnInfo[turn]
+         record=[turn,"A",artifact[:source],artifact[:area],@fullName,@shortName,
+                                artifact[:posessor],@type,@statusPts].join(',')
+         ofile.puts record
+      end
+   end
 end # class Artifact
 
 #--------------------------------------------------------------------------
@@ -451,11 +524,22 @@ class PopCenterList
       end
       return pcList
    end # getByKingdomAndTurn
+
+   def getByRegion(region)
+      pcList = Array.new
+      @list.each do |area,popCenter|
+         if popCenter.getRegion == region
+            pcList.push popCenter
+         end
+      end
+      return pcList
+   end
+
    def getCurrentProductionByRegionAndKingdom(region, banner)
       food = gold = 0
       @list.each do |area,popCenter|
-         next unless popCenter.getOwnerByTurn($currentTurn) == banner
-         next unless popCenter.getRegion.to_i == region.to_i
+         next if banner != nil and popCenter.getOwnerByTurn($currentTurn) != banner 
+         next if region != nil and popCenter.getRegion.to_i != region.to_i 
          (f,g)=popCenter.getProduction($currentTurn)
          food += f.to_i
          gold += g.to_i
@@ -469,6 +553,43 @@ class PopCenterList
    end
    def getAllLocs
       return @list.keys
+   end
+   def addMarkers
+      @list.each do |area,pop|
+         addColoredMapMarker(area, pop.getType[0], pop.getLastKnownOwner, pop.getRegion)
+      end
+   end
+   # Look for PC that used to be ours but are not anymore.
+   # Add a new record with the banner as unknown
+   def  findLostPC
+      lostPopCenters = Array.new
+      lastTurn = $currentTurn.to_i - 1
+      @list.each do |area,popCenter|
+         if popCenter.getOwnerByTurn("#{lastTurn}") == $myKingdom
+            if popCenter.getOwnerByTurn($currentTurn) != $myKingdom
+               lostPopCenters.push area
+            end
+         end
+      end
+      return lostPopCenters
+   end
+
+   def  findGainedPC
+      gainedPopCenters = Array.new
+      lastTurn = $currentTurn.to_i - 1
+      @list.each do |area,popCenter|
+         if popCenter.getOwnerByTurn($currentTurn) == $myKingdom
+            if popCenter.getOwnerByTurn("#{lastTurn}") != $myKingdom
+               #appendText("lastTurn=#{lastTurn}  PrevOwner=#{popCenter.getOwnerByTurn(lastTurn)}\n")
+               gainedPopCenters.push area
+            end
+         end
+      end
+      return gainedPopCenters
+   end
+
+   def changeOwner(area,owner)
+      @list[area].changeOwner(owner)
    end
 end # end class PopCenterList
 
@@ -505,6 +626,18 @@ class PopCenter
                            TEXT_TAG_WARNING) unless source == "Recon" or $debug.to_i == 0
       end
    end
+
+   def changeOwner(owner)
+      turn = $currentTurn
+      if @turnInfo[turn] == nil
+         addTurn(nil,nil,$currentTurn,"manual",nil,nil,nil,nil,nil,nil,nil)
+      end
+      appendText("Changing owner from #{@turnInfo[turn][:banner]} to #{owner}\n")
+      @turnInfo[turn][:source] = "manual"
+      @turnInfo[turn][:banner] = owner
+      addColoredMapMarker(@area, @type[0], getLastKnownOwner, @region)
+   end
+
    def toString(turn)
       turn = getTurnList.last if turn == nil
       if @turnInfo[turn] == nil 
@@ -529,6 +662,17 @@ class PopCenter
                    @turnInfo[turn][:other])
       return line
     end
+
+    def getLatestStats
+       turn = getTurnList.Last
+       if turn == nil or @turnInfo[turn] == nil
+          return 0,0
+       else
+          ti= @turnInfo[turn]
+          return ti[:banner],ti[:defense],ti[:census],ti[:food],ti[:gold]
+       end
+    end
+
     def getLastKnownPopulation
        return getPopulationByTurn( getTurnList.last)
     end
@@ -548,6 +692,9 @@ class PopCenter
           @turnList = @turnInfo.keys.sort_by(&:to_i)
        end
        return @turnList
+    end
+    def getLatestTurn
+       return getTurnList.last
     end
     def getOwnerByTurn(turn) 
        return nil if @turnInfo[turn] == nil
@@ -631,6 +778,8 @@ class GroupList
          line = @list[groupKey].toString(  turn )
          if turn == $currentTurn
             appendText(line)
+            #addColoredMapMarker(@list[groupKey].getLocOnTurn(turn), @list[groupKey].getName, @list[groupKey].getBanner)
+            addColoredMapMarker(@list[groupKey].getLocOnTurn(turn), 'A', @list[groupKey].getBanner, @list[groupKey].getName[0])
          else
             appendTextWithTag(line, TEXT_TAG_STALE)
          end
@@ -669,7 +818,7 @@ class Group
           $areaList.addGroup( getID(), area, turn, region)
        else
           appendTextWithTag("WARNING: ArmyGroup #{@banner}-#{@name} already has info for turn #{turn}. Ignoring data from #{source}\n",
-                            TEXT_TAG_WARNING) unless source == "Recon"
+                            TEXT_TAG_WARNING) unless source == "Recon" or $debug.to_i == 1
        end
    end
    def getBanner
@@ -773,6 +922,29 @@ class EmissaryList
       end
       return emList
    end
+
+   def  findLostEmissaries
+      lostRoyals = Array.new
+      lastTurn = $currentTurn.to_i - 1
+      @list.each do |id,emissary|
+         next if emissary.hasTurn( $currentTurn )
+         next if emissary.getBanner != $myKingdom
+         lostRoyals.push id if emissary.getLastTurn.to_i == lastTurn.to_i
+      end
+      return lostRoyals
+   end
+   
+   def findNewEmissaries
+      newRoyals = Array.new
+      lastTurn = $currentTurn.to_i - 1
+      @list.each do |id,emissary|
+         next if emissary.getLastTurn != $currentTurn 
+         next if emissary.getBanner != $myKingdom
+            newRoyals.push id if ! emissary.hasTurn( "#{lastTurn}")
+      end
+      return newRoyals
+   end
+
    def getEmissaryByKingdom(banner)
       emList = Array.new
       @list.each do |id,emissary|
@@ -814,7 +986,7 @@ class Emissary
          $areaList.addEmissary( getID(), area )
       else
          appendTextWithTag("WARNING: Emissary #{@banner}-#{@name} already has info for turn #{turn}. Ignoring data from #{source}\n",
-                           TEXT_TAG_WARNING) unless source == "Recon"
+                           TEXT_TAG_WARNING) unless source == "Recon" or $debug.to_i == 1
       end
    end
    def getAreaList
@@ -922,7 +1094,7 @@ def showScaryRoyals(threatenedBanner, turn)
       owner = popCenter.getOwnerByTurn(turn)
       if owner == threatenedBanner
          pcInfo = popCenter.toString(turn).strip
-         line = " #{pcInfo}      is threatened by #{emissary.getName}(#{emissary.getRank(turn)}) of the #{emissary.getBanner} kingdom\n"
+         line = "  #{pcInfo}      is threatened by #{emissary.getName}(#{emissary.getRank(turn)}) of the #{emissary.getBanner} kingdom\n"
          appendTextWithTag(line,TEXT_TAG_DANGER)
       #appendText(emissary.toString(turn) )if owner == threatenedBanner
       end
@@ -964,6 +1136,12 @@ def playSound
 #  Sound.play('Alamazethingy1.wav',Sound::ASYNC)
 end
 
+def getBannerColor(banner)
+   color = $kingdomColors[banner]
+   color = $kingdomColors['NE'] if color==nil
+   return color
+end
+
 def getColor(x,y)
    terrainType=$mapSquares[y][x]
    color = $terrainHash[terrainType]
@@ -972,24 +1150,59 @@ end
 
 
 # remove all previous highlights
-def unHighlight()
-  $canvas.delete('line')
-  $canvas.itemconfigure(I_AM_A_BOX, 
+def unHighlightTag(tag)
+  $canvas.itemconfigure(tag, 
                         'width' => 1,
                         'outline' => BOX_OUTLINE_NORMAL)
 end
 
-def highlightTag(tag)
-  unHighlight
+def unHighlight()
+  $canvas.delete('line')
+  unHighlightTag(I_AM_A_BOX)
+end
+
+def highlightTag(tag, clearOtherHighlights)
+  unHighlight if clearOtherHighlights
   # highlight all of the boxes with the given tag
   $canvas.raise(tag) 
   $canvas.raise('Marker') 
-  $canvas.itemconfigure('Marker', 'fill' =>'black' ) 
-#  $canvas.itemconfigure("m-#{tag}", 'fill' =>'white' ) 
+  #$canvas.itemconfigure('Marker', 'fill' =>'black' ) 
   $canvas.itemconfigure(tag, 
                         'width' => 3,
                         'outline' => BOX_OUTLINE_HIGHLIGHTED)
                         #'fill' => 'green')
+   $canvas.raise($currentTopTag)
+end
+
+def showPopCenterChanges
+   clearText
+   unHighlight
+   appendTextWithTag("Population centers which we have gained or lost this turn.\n\n",TEXT_TAG_TITLE)
+   $popCenterList.printHeader
+   $popCenterList.findLostPC.each do |area|
+      line = $popCenterList.getPopCenter(area).toString($currentTurn)
+      appendTextWithTag(line,TEXT_TAG_DANGER)
+   end
+   $popCenterList.findGainedPC.each do |area|
+      line = $popCenterList.getPopCenter(area).toString($currentTurn)
+      appendTextWithTag(line,TEXT_TAG_GOOD)
+   end
+end
+
+def showEmissaryChanges
+   clearText
+   unHighlight
+   appendTextWithTag("Emissaries which we have gained or lost this turn.\n\n",TEXT_TAG_TITLE)
+   lastTurn = $currentTurn.to_i - 1
+   $emissaryList.showEmHeader
+   $emissaryList.findLostEmissaries.each do |id|
+      line = $emissaryList.getEmissaryByID(id).toString("#{lastTurn}")
+      appendTextWithTag(line,TEXT_TAG_DANGER)
+   end
+   $emissaryList.findNewEmissaries.each do |id|
+      line = $emissaryList.getEmissaryByID(id).toString($currentTurn)
+      appendTextWithTag(line,TEXT_TAG_GOOD)
+   end
 end
 
 def showAllArtifacts
@@ -1010,11 +1223,9 @@ end
 def showMyProduction
    clearText
    unHighlight
-   showProductionForKingdomPerRegion($myKingdom)
-   appendText("\n\n")
-   showPopsOfKingdom($myKingdom, $currentTurn)
-#  appendText("\n\n")
-#  showScaryRoyals($myKingdom,$currentTurn)
+   #showProductionStatsByRegion
+   showProductionStatsByKingdom
+   showPopCentersByRegion
 end
 
 
@@ -1072,8 +1283,13 @@ def showPopsOfKingdom(banner, myTurn)
    end
    $popCenterList.printHeader 
    pcList.each do |popCenter|
-      line = popCenter.toString(myTurn)
-      if myTurn == $currentTurn
+      if myTurn == nil 
+         turn = popCenter.getLatestTurn
+      else
+         turn = myTurn
+      end
+      line = popCenter.toString(turn)
+      if turn == $currentTurn
         appendText(line)
       else
         appendTextWithTag(line, TEXT_TAG_STALE)
@@ -1136,11 +1352,11 @@ def addPopCenter(line)
  pop = $popCenterList.addPopCenter(line)
 
  (turn,x,source,area,banner,name,region,type,defense,census,food,gold,other)=line.split(',')
- addMapMarker(pop.getArea,pop.getType[0])
+ #addColoredMapMarker(pop.getArea, pop.getType[0], banner)
  
  $kingdoms[banner]=1
 
- @MAP[area].addtag("banner-#{banner}")
+ $areaList.addtag(area,"banner-#{banner}")
  $turns[turn]=1
 end
 
@@ -1156,6 +1372,20 @@ def addArtifact(line)
    $artifactList.addArtifact(line)
 end
 
+# TODO 
+def markExplored(tag)
+   appendText("Marking #{tag} as explored \n")
+end
+
+def addExploredAreas(line)
+   (turn,x,areaList)=line.split(',',3)
+   return if areaList == nil or areaList.size == 0
+   areaList.split(',').each do |area|
+      $exploredAreas.push area.strip
+      addColoredMapMarker(area,EXPLORED_MARKER,EXPLORED_COLOR)
+   end
+end
+
 # [@turnNumber,"P",p['source'],area,p['banner'],p['name'],p['type'],p['defense'],p['census'],p['food'],p['gold'],p['other']].join(',')
 def addEmissary(line)
  
@@ -1166,12 +1396,9 @@ def addEmissary(line)
  $kingdoms[banner]=1
  nameTag="#{banner}-#{name}"
  $emissaries[nameTag]=banner
- if @MAP[area] == nil
-   appendTextWithTag("WARNING: Invalid area [#{area}] found in line [#{line}]. Skipping.\n", TEXT_TAG_WARNING)
-   return
- end
- @MAP[area].addtag("banner-#{banner}")
- @MAP[area].addtag(nameTag)
+ $areaList.addtag(area,nameTag)
+ $areaList.addtag(area,"banner-#{banner}")
+ #@MAP[area].addtag(nameTag)
 end
 
 # Turn,Record Type,Data Source,Map Location,Kingdom,Name,size,archers,foot,horse,leader1,leader2,leader3,wizard1,wizard2,wizard3
@@ -1180,10 +1407,9 @@ def addArmyGroup(line)
  (turn,x,source,area,banner,name,size,archers,foot,horse,l1,l2,l3,w1,w2,w3)=line.split(',')
  $kingdoms[banner]=1
  $armies[name]=banner
- if area != nil and area.size == 2
-    @MAP[area].addtag("banner-#{banner}")
-    @MAP[area].addtag(name)
- end
+ $areaList.addtag(area,"banner-#{banner}")
+ $areaList.addtag(area,name)
+ #addMapMarker(area,name)
 end
 
 def showRegionalLeaders
@@ -1307,6 +1533,7 @@ def showPopCenterData(area,turn)
       if p == nil 
          return
       end
+      turn = p.getLatestTurn if turn == nil
       line = p.toString(turn)
       if turn == $currentTurn
          appendText( line )
@@ -1319,7 +1546,7 @@ def showPopCenter(area,showHeader)
    $popCenterList.printHeader if showHeader
    case $history.value.to_i
    when HISTORY_ALL
-      ('1'..$currentTurn).each do |turn|
+      ('0'..$currentTurn).each do |turn|
          showPopCenterData(area,turn)
       end
    when HISTORY_LATEST
@@ -1329,8 +1556,53 @@ def showPopCenter(area,showHeader)
    end
 end
 
+def showProductionStatsByKingdom
+   clearText
+   unHighlight
+   appendTextWithTag("\nProduction Stats by Kingdom:\n", TEXT_TAG_TITLE)
+   line=sprintf("%-25s %10s %10s\n", "Kingdom Name", "Food", "Gold")
+   appendText(line)
+   appendText("------------------------  ---------- ----------\n")
+   $kingdomNameMap.keys.sort.each do |banner|
+      (food,gold) = $popCenterList.getCurrentProductionByRegionAndKingdom(nil, banner)
+      line=sprintf("%-25s %10s %10s\n", $kingdomNameMap[banner], food, gold)
+      appendTextWithTag(line,banner)
+   end
+end
+
+def showProductionStatsByRegion
+   appendTextWithTag("\nProduction Stats by Region:\n", TEXT_TAG_TITLE)
+   line=sprintf("%-25s %10s %10s\n", "Region Name", "Food", "Gold")
+   appendTextWithTag(line,TEXT_TAG_HEADING)
+   appendTextWithTag("------------------------  ---------- ----------\n",TEXT_TAG_HEADING)
+   $regionMap.keys.sort_by(&:to_i).each do |region|
+      #pcList = $popCenterList.getByRegion(region)
+      (food,gold) = $popCenterList.getCurrentProductionByRegionAndKingdom(region, nil)
+      line=sprintf("%-25s %10s %10s\n", $regionMap[region], food, gold)
+      appendText(line)
+   end   
+   showPopCentersByRegion
+end
+
+def showPopCentersByRegion
+   clearText
+   unHighlight
+   appendTextWithTag("\nPopulation Centers by Region:\n", TEXT_TAG_TITLE)
+   $regionMap.keys.sort_by(&:to_i).each do |region|
+      controller=$regionList.getLatestController(region)
+      appendTextWithTag("\n\n#{$regionMap[region]} Controlled by #{controller}\n",TEXT_TAG_HEADING)
+      $popCenterList.printHeader
+      pcList = $popCenterList.getByRegion(region)
+      pcList.each do |pc|
+         line=pc.toString( pc.getLatestTurn)
+         appendTextWithTag(line, pc.getLastKnownOwner)
+      end
+   end   
+end
+
 def loadDocument(filename)
-  appendText("You selected to load #{filename}\n")
+  clearText
+  appendText("Loading data from #{filename}\n")
   IO.foreach(filename) { |line|
      appendTextWithTag("Data file contains warnings.\n",TEXT_TAG_WARNING) if line.match(/WARNING/)
      next if !line.match(/^\d+/)
@@ -1349,16 +1621,20 @@ def loadDocument(filename)
         addArtifact(line)
      when 'R'
         addRegion(line)
+     when 'X'
+        addExploredAreas(line)
      else
         appendTextWithTag("Unknown record type=#{recordType}\n", TEXT_TAG_DANGER)
      end
   }
   updateFilterLists
   setInfoLabel
+  $popCenterList.addMarkers
   $regionList.gatherStats
   #playSound
   $currentTurn= $turns.keys.sort_by(&:to_i).last
   appendText("\nCurrent turn is #{$currentTurn}\n")
+  $canvas.raise($currentTopTag)
 end
 
 def openDocument
@@ -1367,10 +1643,31 @@ def openDocument
                             'parent' => $root )
   if filename != ""
     loadDocument(filename)
+    $currentOpenFile=filename
+  end
+end
+
+def runParser(filename)
+   clearText
+   tempFile = "ofile.dat"
+   File.delete(tempFile) if File.exists?(tempFile)
+   cmd="ruby parse1.rb #{filename} > #{tempFile}"
+   appendText("Attempting to parse #{filename}\n")
+   system(cmd)
+   loadDocument(tempFile)
+end
+
+def parseTurn
+  filetypes = [ ["Alamaze Turn Results", "*.PDF"],["All Files", "*"] ]
+  filename = Tk.getOpenFile('filetypes' => filetypes,
+                            'parent' => $root )
+  if filename != ""
+    runParser(filename)
   end
 end
 
 def saveDocument(filename)
+   appendText("Saving data to #{filename}\n")
    ofile = File.new(filename, File::CREAT|File::TRUNC|File::RDWR)
    if ofile == nil or File.writable?(filename) == false
       appendTextWithTag("Failure opening #{filename} for writing. Nothing saved!\n", TEXT_TAG_DANGER)
@@ -1387,8 +1684,22 @@ def saveDocument(filename)
    $popCenterList.saveDataToFile(ofile)
    $emissaryList.saveDataToFile(ofile)
    $groupList.saveDataToFile(ofile)
+   $artifactList.saveDataToFile(ofile)
+   $regionList.saveDataToFile(ofile)
+
+   record = [$currentTurn, "X", $exploredAreas].join(',')
+   ofile.puts record
 
    ofile.close
+   $currentOpenFile = filename
+end
+
+def saveData
+   if $currentOpenFile == nil
+      saveAsData
+   else
+      saveDocument($currentOpenFile)
+   end
 end
 
 def saveAsData
@@ -1397,12 +1708,12 @@ def saveAsData
                             'parent' => $root )
   if filename != ""
     filename += ".dat" unless filename.match(/\.dat$/)
-    appendText("Saving data to #{filename}\n")
     saveDocument(filename)
   end
 end
 
 def appendTextWithTag(string,tag)
+   createTextWindow
    $textBox.insert('end',string, tag)
 end
 
@@ -1411,49 +1722,78 @@ def appendText(string)
 end
 
 def clearText
+   createTextWindow
    $textBox.delete(1.0,'end')
 end
 
 def getCenter(loc)
-   if @MAP[loc] == nil
-      appendTextWithTag("Invalid loc(#{loc}) passed to getCenter\n", TEXT_TAG_DANGER);
-      return nil
-   end
-   coords =  @MAP[loc].configinfo('coords')
-   x= coords[4][0] + BOX_HEIGHT/2
-   y= coords[4][1] + BOX_WIDTH/2
+   return if loc == nil or loc.empty?
+   yPart = loc[0].ord - 'A'.ord
+   xPart = loc[1].ord - 'A'.ord
+   size = :small
+   x = $offsets[size][:frameX] + ($offsets[size][:boxX]*xPart) + $offsets[size][:boxX]/2.0
+   y = $offsets[size][:frameY] + ($offsets[size][:boxY]*yPart) + $offsets[size][:boxY]/2.0
    return [x,y]
 end
 
 # Puts a single lettera to one of the boxes
-def addMapMarkerOLD(loc,marker)
+#def addMapMarkerOLD(loc,marker)
    #coords =  @MAP[loc].configinfo('coords')
    #x= coords[4][0] + BOX_HEIGHT/2
    #y= coords[4][1] + BOX_WIDTH/2
-   (x,y)=getCenter(loc)
+#   (x,y)=getCenter(loc)
    #t = TkcText.new($canvas, x, y, 'text' => marker, 'tags' => [marker,loc, 'Marker', "m-#{loc}", "m-#{marker}"], 
-   t = TkcText.new($canvas, x, y, 'text' => marker, 'tags' => [marker,loc, 'Marker'], 
-                   'fill' => 'black', 'font' => $boldFont )
-   t.bind('1', proc { boxClick loc } )
+#   t = TkcText.new($canvas, x, y, 'text' => marker, 'tags' => [marker,loc, 'Marker'], 
+#                   'fill' => 'black', 'font' => $boldFont )
+#   t.bind('1', proc { boxClick loc } )
    #t.addTag(loc)
-end
+#end
 
-def addSizedMarker(size,x,y,marker,loc)
+def addSizedMarker(size,x,y,marker,markerText,loc,banner)
 
    x = $offsets[size][:frameX] + ($offsets[size][:boxX]*x) + $offsets[size][:boxX]/2.0
    y = $offsets[size][:frameY] + ($offsets[size][:boxY]*y) + $offsets[size][:boxY]/2.0
 
-   t = TkcText.new($canvas, x, y, 'text' => marker, 'tags' => [marker,loc,'Marker', $offsets[size][:tag] ],
-                   'fill' => 'black', 'font' => $offsets[size][:font] )
-   t.bind('1', proc { boxClick loc } )
+   banner = "unknown" if $kingdomBitmaps[banner] == nil
+   color = $kingdomColors[banner]
+   color = 'black' if color == nil
+   
+
+   if marker == "C" 
+      m = TkcImage.new($canvas,x,y, 'image' => $kingdomBitmaps[banner][marker][size] , :tags => [marker,loc,'Marker', $offsets[size][:tag] ])
+   elsif marker == "A"
+      (m,t) = drawAnArmy(size,x,y,markerText,color)
+   elsif marker == "V"
+      (m,t) = drawAVillage(size,x,y,markerText,color)
+   elsif marker == "T"
+      (m,t) = drawATown(size,x,y,markerText,color)
+   elsif marker == "#"
+      m = drawNoPC(size,x,y,loc)
+   elsif marker == "@"
+      m = drawNoUS(size,x,y)
+   else
+      m = TkcText.new($canvas, x, y, 'text' => markerText, 'tags' => [marker,loc,'Marker', $offsets[size][:tag] ],
+                      'fill' => color, 'font' => $offsets[size][:font] )
+   end
+
+   m.bind('1', proc { boxClick loc } )
+   m.bind('3', proc { |x,y| rightClickMarker(x,y,loc,marker) }, "%X %Y" )
+   t.bind('1', proc { boxClick loc } ) if t != nil
+   t.bind('3', proc { |x,y| rightClickMarker(x,y,loc,marker) }, "%X %Y" ) if t != nil
 end
 
 
 def addMapMarker(loc,marker)
+   return if loc == nil or loc.empty?
+   addColoredMapMarker(loc,marker,'black')
+end
+
+def addColoredMapMarker(loc,marker,banner, markerText="")
+   return if loc == nil or loc.size != 2
    yPart = loc[0].ord - 'A'.ord
    xPart = loc[1].ord - 'A'.ord
-   addSizedMarker(:big, xPart, yPart, marker,loc)
-   addSizedMarker(:small, xPart, yPart, marker,loc)
+   addSizedMarker(:big, xPart, yPart, marker,markerText,loc,banner)
+   addSizedMarker(:small, xPart, yPart, marker,markerText,loc,banner)
 end
 
 
@@ -1484,7 +1824,7 @@ end
 # the parsed results for that location
 def boxClick(loc)
    clearText
-   loc.gsub!("box-","")
+   loc.gsub!("box-","") if loc.include? "box"
    appendTextWithTag("Area #{loc}\n\n",TEXT_TAG_TITLE)
    #@MAP[loc].configure( 'fill' => 'red')
    showPopCenter(loc, true)
@@ -1494,22 +1834,88 @@ def boxClick(loc)
 
 end
 
+def enterNewOwner(entry, area)
+   text = entry.get.strip.upcase
+   appendText("entered #{text} for #{area}\n")
+   $menuDialog.destroy if TkWinfo.exist?($menuDialog)
+   if $kingdomNameMap[text] == nil
+      Tk::messageBox :message => "#{text} is not a valid kingdom name"
+      return
+   end
+   $popCenterList.changeOwner(area,text)
+   $canvas.raise($currentTopTag)
+end
+
+def changePCOwner(area)
+   pc = $popCenterList.getPopCenter(area)
+   if pc == nil 
+      Tk::messageBox :message => "There is no population center at area  #{area}"
+      return
+   end
+
+   pcName = $popCenterList.getPopCenter(area).getName
+   owner =  $popCenterList.getPopCenter(area).getLastKnownOwner
+
+   unHighlight
+   $menuDialog.destroy if TkWinfo.exist?($menuDialog)
+   $menuDialog = TkToplevel.new($root) do
+      title "Changing Owner of #{pcName}"
+   end
+   frame = TkFrame.new($menuDialog) do
+      relief 'sunken'
+      borderwidth 3
+      background 'darkgrey'
+      padx 10
+      pady 10
+   end
+
+   TkLabel.new(frame) do
+      text 'Enter New Owner: '
+      pack('side'=>'left')
+   end
+
+   entry = TkEntry.new(frame) do
+      width '10'
+      pack('side'=>'left', 'fill' =>'x', 'expand' => 0)
+   end
+   entry.insert('end', owner)
+   entry.bind('Return', proc { enterNewOwner(entry,area) } )
+   frame.pack
+
+end
+
+def deleteNoPCMarker(area)
+      $exploredAreas.delete(area.strip)
+      uniqueTag="NoPC-#{area}"
+      $canvas.delete(uniqueTag)
+end
+
+def rightClickMarker(x,y,area,marker)
+   pm = TkMenu.new do
+     title 'Actions'
+     type  'normal' 
+   end
+   if marker == 'C' or marker == 'T' or marker == 'V'
+      pm.add('command',
+             'label'     => "Change PC Owner...",
+             'command'   => proc { changePCOwner area}
+             )
+   elsif marker == "#"
+      pm.add('command',
+             'label'     => "Delete Explored marker",
+             'command'   => proc { deleteNoPCMarker area}
+             )
+   end
+   pm.post(x.to_i,y.to_i)
+end
+
 def setupMenus(root)
 
-   menu_click = Proc.new {
-     Tk.messageBox(
-       'type'    => "ok",  
-       'icon'    => "info",
-       'title'   => "Title",
-       'message' => "Not Supported Yet"
-     )
-   }
-   
    file_menu = TkMenu.new(root)
    
    file_menu.add('command',
                  'label'     => "New...",
-                 'command'   => menu_click,
+                 'command'   => proc { closeFile },
                  'underline' => 0)
    file_menu.add('command',
                  'label'     => "Open...",
@@ -1517,17 +1923,22 @@ def setupMenus(root)
                  'underline' => 0)
    file_menu.add('command',
                  'label'     => "Close",
-                 'command'   => menu_click,
+                 'command'   => proc { closeFile },
                  'underline' => 0)
    file_menu.add('separator')
    file_menu.add('command',
                  'label'     => "Save",
-                 'command'   => menu_click,
+                 'command'   => proc { saveData },
                  'underline' => 0)
    file_menu.add('command',
                  'label'     => "Save As...",
                  'command'   => proc { saveAsData },
                  'underline' => 5)
+   file_menu.add('separator')
+   file_menu.add('command',
+                 'label'     => "Parse...",
+                 'command'   => proc { parseTurn },
+                 'underline' => 0)
    file_menu.add('separator')
    file_menu.add('command',
                  'label'     => "Exit",
@@ -1539,7 +1950,16 @@ def setupMenus(root)
                 'menu'  => file_menu,
                 'label' => "File")
    
+   map_menu = TkMenu.new(root)
+   map_menu.add('command',
+                 'label'     => "Mark Explored...",
+                 'command'   => proc { createAddExploredDialog },
+                 'underline' => 5)
    
+   menu_bar.add('cascade',
+                'menu'  => map_menu,
+                'label' => "Map")
+
    root.menu(menu_bar)
 end
 
@@ -1554,25 +1974,18 @@ def drawBox(canvas,x,y,tag)
    bBox.addtag(I_AM_A_BOX)
    bBox.addtag(tag)
    bBox.bind('1', proc { boxClick tag } )
+   bBox.bind('3', proc { markExplored tag } )
    bBox.bind('Enter', proc { $cursorLoc.value = tag.gsub('box','Area') } )
    sBox = drawABlock(:small, x,y)
    sBox.addtag(I_AM_A_BOX)
    sBox.addtag(tag)
    sBox.bind('1', proc { boxClick tag } )
+   sBox.bind('3', proc { markExplored tag } )
    sBox.bind('Enter', proc { $cursorLoc.value = tag.gsub('box','Area') } )
    return bBox,sBox
 end
 
 def fillGrid
-   # Create the canvas object
-#  $canvas=TkCanvas.new(frame) do
-#     height BOX_HEIGHT * 26
-#     width BOX_WIDTH * 26
-#     border 1
-#  end
-
-   @MAP=Hash.new
-
    # creat the 26x26 grid of boxes
    for x in 0..25
      l1=('A'.ord+x).chr
@@ -1580,8 +1993,8 @@ def fillGrid
         l2=('A'.ord+y).chr
         loc="#{l2}#{l1}"
         (bBox,sBox)= drawBox($canvas,x,y,"box-#{loc}")
-        $areaList.addBox(loc,sBox)
-        @MAP[loc]= sBox
+        $areaList.addBox(loc,sBox,bBox)
+        #@MAP[loc]= sBox
      end
    end
    $canvas.bind('Leave', proc { $cursorLoc.value = " " } )
@@ -1593,12 +2006,13 @@ def chooseEmissary(lb)
    return if idx == nil or idx.empty?
    selection = lb.get(idx)
    (banner,name)=selection.split('-',2) # some emissaries have dashes in their names!
+   unHighlight
    appendTextWithTag("Tracking the movements of  #{name} of the #{banner} kingdom!\n\n",TEXT_TAG_TITLE)
    areaList = findEmissaryAreas(banner, name)
    showEmHeader
    areaList.reverse_each do |areaEntry|
       (turn,area)=areaEntry.split('-')
-      highlightTag("box-#{area}")
+      highlightTag("box-#{area}", false)
       break if showEmissary(area,name,false,turn) and $history.value.to_i == HISTORY_LATEST
    end
    drawLines(banner, name, areaList, EMISSARY_ARROW_COLOR, EMISSARY_ARROW_WIDTH)
@@ -1614,9 +2028,10 @@ def chooseArmy(lb)
    appendTextWithTag("Tracking the movements of  #{name} of the #{banner} kingdom!\n\n",TEXT_TAG_TITLE)
    areaList = findArmyAreas(banner, name)
    showArmyHeader
+   unHighlight
    areaList.reverse_each do |areaEntry|
       (turn,area)=areaEntry.split('-')
-      highlightTag("box-#{area}")
+      highlightTag("box-#{area}",false)
       break if showArmyGroup(area,name,false,turn) and $history.value.to_i == HISTORY_LATEST
    end
    drawLines(banner, name, areaList, ARMY_ARROW_COLOR, ARMY_ARROW_WIDTH)
@@ -1629,7 +2044,7 @@ def chooseKingdom(lb)
    return if idx == nil or idx.empty?
    selection = lb.get(idx)
    #appendText("selected #{selection}\n")
-   highlightTag("banner-#{selection}")
+   highlightTag("banner-#{selection}",true)
    hWhen = $history.value
    targetTurn = $currentTurn
    targetTurn = nil if $history.to_i != HISTORY_CURRENT
@@ -1758,13 +2173,13 @@ end
 
 def createSearchButtons(frame)
    TkButton.new(frame) do
-      text "My Production"
-      command (proc{showMyProduction})
+      text "Region Stats"
+      command (proc{$regionList.showAllStats})
       pack
    end
    TkButton.new(frame) do
-      text "Threatened Production"
-      command (proc{showMyThreatenedProduction})
+      text "Show All Groups"
+      command (proc{$groupList.showAllGroups})
       pack
    end
    TkButton.new(frame) do
@@ -1773,13 +2188,28 @@ def createSearchButtons(frame)
       pack
    end
    TkButton.new(frame) do
-      text "Region Stats"
-      command (proc{$regionList.showAllStats})
+      text "Production By Kingdom"
+      command (proc{showProductionStatsByKingdom})
       pack
    end
    TkButton.new(frame) do
-      text "Show All Groups"
-      command (proc{$groupList.showAllGroups})
+      text "Pop Centers By Region"
+      command (proc{showPopCentersByRegion})
+      pack
+   end
+   TkButton.new(frame) do
+      text "Threatened Production"
+      command (proc{showMyThreatenedProduction})
+      pack
+   end
+   TkButton.new(frame) do
+      text "Show Lost/Gained Pop Centers"
+      command (proc{showPopCenterChanges})
+      pack
+   end
+   TkButton.new(frame) do
+      text "Show Lost/Hired Emissaries"
+      command (proc{showEmissaryChanges})
       pack
    end
 end # end createSearchButtons
@@ -1833,6 +2263,145 @@ def tagText(pattern,tag)
    end
 end
 
+
+def createScrollableListbox(inputFrame)
+    frame = TkFrame.new(inputFrame)
+    lb = TkListbox.new(frame) {
+             selectmode 'multiple'
+             width 5
+             height 9
+             pack('side'=>'left')
+    }
+    sb = TkScrollbar.new(frame) {
+       command proc { |*args|
+          lb.yview(*args)
+       }
+       pack('side' => 'left', 'fill' => 'y', 'expand' => 0)
+    }
+    lb.yscrollcommand(proc { |first,last|
+                             sb.set(first,last) })
+    frame.pack('fill' => 'both', 'expand' => 0)
+    return lb
+end
+
+def shiftValues(from,to,highlight)
+   fromList = from.curselection
+   while fromList.size > 0 do
+      index = fromList.first
+      area = from.get(index)
+      to.insert('end', area)
+      from.delete(index)
+      fromList = from.curselection
+      if highlight
+         highlightTag("box-#{area}",false)
+      else
+         unHighlightTag("box-#{area}")
+      end
+   end
+end
+
+def markExploredFromLB(lb)
+   unHighlight
+   areaList = lb.get(0,'end')
+   areaList.each do |area|
+      $exploredAreas.push area.strip
+      addColoredMapMarker(area,EXPLORED_MARKER,EXPLORED_COLOR)
+   end
+   lb.delete(0,'end')
+   $exploreDialog.destroy
+end
+
+def enterAreas(entry,rightListBox)
+   entryText = entry.get
+   areaList = entryText.upcase.split(/\W/)
+   areaList.each do |area|
+      #next if area.size != 2
+      rightListBox.insert('end',area)
+      highlightTag("box-#{area}", false)
+   end
+   entry.delete(0,'end')
+end
+
+def createAddExploredDialog
+   unHighlight
+   $exploreDialog.destroy if TkWinfo.exist?($exploreDialog)
+   $exploreDialog = TkToplevel.new($root) do
+      title 'Where I Have Gone Before'
+   end
+   frame = TkFrame.new($exploreDialog) do
+      relief 'sunken'
+      borderwidth 3
+      background 'darkgrey'
+      padx 10
+      pady 10
+   end
+   topFrame = TkFrame.new(frame)
+   middleFrame = TkFrame.new(frame)
+   bottomFrame = TkFrame.new(frame)
+   leftLbFrame = TkFrame.new(middleFrame)
+   rightLbFrame = TkFrame.new(middleFrame)
+   buttonFrame = TkFrame.new(middleFrame)
+
+   leftListBox = createScrollableListbox(leftLbFrame)
+   rightListBox = createScrollableListbox(rightLbFrame)
+
+   TkLabel.new(topFrame) do
+      text 'Enter explored areas: '
+      pack('side'=>'left')
+   end
+
+   entry = TkEntry.new(topFrame) do
+      width '10'
+      pack('side'=>'left', 'fill' =>'x', 'expand' => 0)
+   end
+   entry.bind('Return', proc { enterAreas(entry,rightListBox) } )
+
+
+   TkButton.new(buttonFrame) do
+      text "<-"
+      command (proc{shiftValues(rightListBox,leftListBox,false)})
+      pack('side' => 'top', 'fill' => 'both', 'expand' => 1)
+   end
+   TkButton.new(buttonFrame) do
+      text "->"
+      command (proc{shiftValues(leftListBox,rightListBox,true)})
+      pack('side' => 'top', 'fill' => 'both', 'expand' => 1)
+   end
+
+   TkButton.new(bottomFrame) do
+      text "Make it so!"
+      command (proc{markExploredFromLB(rightListBox)})
+      pack('side' => 'top', 'fill' => 'x', 'expand' => 1)
+   end
+
+   leftListBox.pack('side' => 'left')
+   leftLbFrame.pack('side' => 'left')
+   buttonFrame.pack('side' => 'left', 'fill' => 'both', 'expand' => 1)
+   rightListBox.pack('side' => 'left')
+   rightLbFrame.pack('side' => 'left')
+   topFrame.pack('side' => 'top', 'fill' => 'both', 'expand' => 0)
+   middleFrame.pack('side' => 'top', 'fill' => 'both', 'expand' => 1)
+   bottomFrame.pack('side' => 'top', 'fill' => 'both', 'expand' => 0)
+   frame.pack('fill' => 'both', 'expand' => 1)
+end
+
+def createTextWindow
+   #return if $textWindow != nil and $textWindow.exists
+   return if TkWinfo.exist?($textWindow)
+   $textWindow = TkToplevel.new($root) do
+      title 'Text Output'
+   end
+   frame = TkFrame.new($textWindow) do
+      relief 'sunken'
+      borderwidth 3
+      background 'darkgrey'
+      padx 10
+      pady 10
+   end
+   createTextBox(frame)
+   frame.pack('fill' => 'both', 'expand' => 1)
+end
+
 def createTextBox(frame)
 
    #textFont = TkFont.new( "weight" => "bold")
@@ -1850,6 +2419,7 @@ def createTextBox(frame)
       pack('side' => 'left', 'fill' => 'both', 'expand' => 1)
    }
    scroll = TkScrollbar.new(frame) {
+      troughcolor 'yellow'
       command proc { |*args|
          tb.yview(*args)
       }
@@ -1872,9 +2442,20 @@ def createTextBox(frame)
    $textBox.tag_configure(TEXT_TAG_HEADING, :background=>'darkgrey',:font=>'courier 10 bold', :relief=>'raised' )
    $textBox.tag_configure(TEXT_TAG_NORMAL, :background=>'lightgrey', :font=>textFont, :relief => 'flat' )
    $textBox.tag_configure(TEXT_TAG_GOOD, :foreground=>'#156f08' )
-   $textBox.tag_configure(TEXT_TAG_WARNING, :background=>'darkgrey', :foreground=>'#dd8d12' )
+   #$textBox.tag_configure(TEXT_TAG_WARNING, :background=>'darkgrey', :foreground=>'#dd8d12' )
+   $textBox.tag_configure(TEXT_TAG_WARNING, :background=>'darkgrey', :foreground=>'black' )
    $textBox.tag_configure(TEXT_TAG_DANGER, :foreground=>'red' )
    $textBox.tag_configure(TEXT_TAG_STALE, :foreground=>'#77acae')
+
+   # Setup a 
+   $kingdomColors.keys.each do |banner|
+      $textBox.tag_add(banner,'end')
+      if banner == 'BL'
+         $textBox.tag_configure(banner, :foreground=>'white', :background=> $kingdomColors[banner] )
+      else
+         $textBox.tag_configure(banner, :foreground=>'black', :background=> $kingdomColors[banner] )
+      end
+   end
 end
 
 def shrinkImage(image)
@@ -1903,17 +2484,37 @@ def setupImage
    $smallH = $smallImage.height
 end
 
+def setupBM(banner,type,color)
+   bigBM = TkBitmapImage.new('file'=>"#{type}Big.xbm", 'foreground' => color)
+   smallBM = TkBitmapImage.new('file'=>"#{type}Small.xbm", 'foreground' => color)
+   $kingdomBitmaps = Hash.new if $kingdomBitmaps == nil
+   $kingdomBitmaps[banner] = Hash.new if $kingdomBitmaps[banner] == nil
+   $kingdomBitmaps[banner][type] = Hash.new if $kingdomBitmaps[banner][type] == nil
+   $kingdomBitmaps[banner][type][:big]=bigBM
+   $kingdomBitmaps[banner][type][:small]=smallBM
+end
+
+def setupKingdomBitmaps
+   $kingdomColors.keys.each do |banner|
+      ["C"].each do |markerType|
+         setupBM(banner, markerType, $kingdomColors[banner])
+      end
+   end
+end
+
 
 def zoomIn
    $canvas.configure(:scrollregion => [0,0,$bigW,$bigH])
-   $canvas.raise('big')
+   $currentTopTag = 'big'
+   $canvas.raise($currentTopTag)
 end
 
 def zoomOut
    w = $smallImage.width
    h = $smallImage.height
    $canvas.configure(:scrollregion => [0,0,$smallW,$smallH])
-   $canvas.raise('small')
+   $currentTopTag = 'small'
+   $canvas.raise($currentTopTag)
    $canvas.xview('scroll', 0, 'units')
    $canvas.yview('scroll', 0, 'units')
 end
@@ -1945,10 +2546,8 @@ def createCanvas(frame)
       end
       orient 'vertical'
    end
-   TkcImage.new($canvas,$smallW/2,$smallH/2, 'image' => $smallImage, :tags => 'small')
-   TkcImage.new($canvas,$bigW/2,$bigH/2, 'image' => $bigImage, :tags => 'big')
-   $canvas.raise('big')
-   canvas.configure(:scrollregion => [0,0,$bigW,$bigH])
+
+   addMapImages
 
    hframe.pack(:expand => 'yes', :fill => 'both')
    #hframe.pack(:side => 'bottom', :expand => 'yes', :fill => 'both')
@@ -2004,7 +2603,75 @@ def initOffsets
    $offsets[:small][:boxX]=26.8
    $offsets[:small][:boxY]=20.1
    $offsets[:small][:tag]='small'
-   $offsets[:small][:font]= TkFont.new( "size" => '12', "weight" => "bold")
+   #$offsets[:small][:font]= TkFont.new( "size" => '17', "weight" => "bold")
+   $offsets[:small][:font]= TkFont.new( "size" => '10' )
+end
+
+def drawNoUS(size,x,y)
+  x1 = x - ($offsets[size][:boxX]*0.10)
+  y1 = y - ($offsets[size][:boxX]*0.10)
+  x2 = x + ($offsets[size][:boxX]*0.10)
+  y2 = y + ($offsets[size][:boxX]*0.10)
+  oval = TkcOval.new($canvas, [x1,y1], [x2,y2] , 
+                         :fill => 'red', :outline => 'yellow',  'tags' => ['NoUS','Marker', $offsets[size][:tag] ])
+  return oval
+end
+
+def drawNoPC(size,x,y,loc)
+  x1 = x - ($offsets[size][:boxX]*0.10)
+  y1 = y - ($offsets[size][:boxX]*0.10)
+  x2 = x + ($offsets[size][:boxX]*0.10)
+  y2 = y + ($offsets[size][:boxX]*0.10)
+  uniqueTag="NoPC-#{loc}"
+  oval = TkcOval.new($canvas, [x1,y1], [x2,y2] , 
+                         :fill => 'red', :outline => 'black',  'tags' => ['NoPC','Marker', $offsets[size][:tag], uniqueTag ])
+  return oval
+end
+
+def drawAnArmy(size,x,y,id,color)
+   p = TkcPolygon.new($canvas,
+                      x +  $offsets[size][:boxX]/2.0, y +  $offsets[size][:boxY]/2.2,
+                      x -  $offsets[size][:boxX]/4.0, y +  $offsets[size][:boxY]/3.5,
+                      x -  $offsets[size][:boxX]/2.0, y,
+                      x -  $offsets[size][:boxX]/4.0, y -  $offsets[size][:boxY]/3.5,
+                      x +  $offsets[size][:boxX]/2.0, y -  $offsets[size][:boxY]/2.2,
+                      x -  $offsets[size][:boxX]/4.0, y,
+                      :smooth => 'true',
+                      :fill => color, :outline => 'black',
+                      :tags =>  ['ARMY','Marker', $offsets[size][:tag] ])
+  textColor='black'
+  textColor='white' if color == 'black'
+  txt  = TkcText.new($canvas,  x -  $offsets[size][:boxX]/5.0, y, 
+                     'text' => id, 'tags' => ['ARMY','Marker', $offsets[size][:tag] ],
+                     'fill' => textColor, 'font' => $offsets[size][:font] )
+  return [p,txt]
+end
+
+def drawAVillage(size,x,y,region,color)
+  x1 = x - ($offsets[size][:boxX]*0.33)
+  y1 = y - ($offsets[size][:boxX]*0.33)
+  x2 = x + ($offsets[size][:boxX]*0.33)
+  y2 = y + ($offsets[size][:boxX]*0.33)
+  oval = TkcOval.new($canvas, [x1,y1], [x2,y2] , 
+                         :fill => color, :outline => 'black',  'tags' => ['VILLAGE','Marker', $offsets[size][:tag] ])
+  textColor='black'
+  textColor='white' if color == 'black'
+  txt  = TkcText.new($canvas, x, y, 'text' => region, 'tags' => ['VILLAGE','Marker', $offsets[size][:tag] ],
+                              'fill' => textColor, 'font' => $offsets[size][:font] )
+  return [oval,txt]
+end
+
+def drawATown(size,x,y,region,color)
+  box = TkcRectangle.new($canvas, x - ($offsets[size][:boxX]*0.33),
+                                  y - ($offsets[size][:boxY]*0.33),
+                                  x + ($offsets[size][:boxX]*0.33),
+                                  y + ($offsets[size][:boxY]*0.33),
+                                  :fill => color, :outline => 'black', :tags=>['TOWN','Marker',$offsets[size][:tag] ])
+  textColor='black'
+  textColor='white' if color == 'black'
+  txt = TkcText.new($canvas, x, y, 'text' => region, 'tags' => ['TOWN','Marker', $offsets[size][:tag] ],
+                      'fill' => textColor, 'font' => $offsets[size][:font] )
+  return [box,txt]
 end
 
 def drawABlock(size,x,y)
@@ -2077,7 +2744,7 @@ def createMainDisplay(root)
    createCanvas(cFrame)
    fillGrid
    zoomOut
-   createTextBox(tFrame)
+   #createTextBox(tFrame)
    createSearchParts(sFrame)
 
  
@@ -2093,13 +2760,46 @@ def createMainDisplay(root)
    return bFrame
 end
 
-$areaList = AreaList.new
-$emissaryList = EmissaryList.new
-$popCenterList= PopCenterList.new
-$groupList= GroupList.new
-$artifactList = ArtifactList.new
-$regionList = RegionList.new
+def closeFile
+   $canvas.delete('all')
+   initVars
+   addMapImages
+   fillGrid
+   zoomOut
+   clearText
+   $currentOpenFile = nil
+end
 
+def addMapImages
+   TkcImage.new($canvas,$smallW/2,$smallH/2, 'image' => $smallImage, :tags => 'small')
+   TkcImage.new($canvas,$bigW/2,$bigH/2, 'image' => $bigImage, :tags => 'big')
+end
+
+def initVars
+   $areaList = AreaList.new
+   $emissaryList = EmissaryList.new
+   $popCenterList= PopCenterList.new
+   $groupList= GroupList.new
+   $artifactList = ArtifactList.new
+   $regionList = RegionList.new
+   $kingdoms = Hash.new
+   $emissaries = Hash.new
+   $armies = Hash.new
+   $turns = Hash.new
+   $currentTurn = 0
+   $gameNumber = nil
+   $myKingdom = nil
+   $infoData = Array.new
+   $influence = Array.new
+   $myGameInfoText.value = "A L A M A Z E"
+   $currentOpenFile=nil
+   $exploredAreas = Array.new
+   $exploreDialog = nil
+   $menuDialog = nil
+   setupImage
+end
+
+initVars
 programName="Alamaze Data Miner"
 $root = TkRoot.new { title programName }
 bFrame=createMainDisplay($root)
@@ -2107,6 +2807,7 @@ TkLabel.new(bFrame) do
    textvariable $cursorLoc
    pack { side 'left' }
 end
+setupKingdomBitmaps
 
 appendTextWithTag("#{programName} Version #{VERSION}\n", TEXT_TAG_TITLE)
 

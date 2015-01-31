@@ -36,7 +36,7 @@ if filename.nil?
    exit 1
 end
 
-VERSION="0.2.0"
+VERSION="0.3.0"
 
 class AlamazeTurnParser
 
@@ -59,6 +59,8 @@ class AlamazeTurnParser
   SECTION_PC_FIND_GROUP=15
   SECTION_REGION_FIND_GROUP=16
   SECTION_REGIONAL_SUMMARY=17
+  SECTION_POLITICAL_EVENTS=18
+  SECTION_MILITARY_MANEUVERS=19
 
   @section=0
   @banner="xxxxxxx"
@@ -134,10 +136,14 @@ class AlamazeTurnParser
         @section = SECTION_RECON_ARTIFACTS
      elsif ( string.include? "IN MEMORIUM")
         @section = SECTION_DEAD_ROYALS
+     elsif ( string.include? "Political Events and Status of the Realm")
+        @section = SECTION_POLITICAL_EVENTS
      elsif ( string.include? "Activities of the Royal Court")
         @section = SECTION_EMISSARY_LOCATIONS
      elsif ( string.include? "Activities of the High Council")
         @section = SECTION_DONT_CARE
+     elsif ( string.include? "Results of our Military maneuvers")
+        @section = SECTION_MILITARY_MANEUVERS
      elsif ( string.include? "Military Group Status")
         @section = SECTION_MILITARY_STATUS
      elsif ( string.include? "Regional Summary")
@@ -170,6 +176,8 @@ class AlamazeTurnParser
         collectEmissaryRecon(string)
      when SECTION_EMISSARY_LOCATIONS
         collectEmissaryLocations(string)
+     when SECTION_MILITARY_MANEUVERS
+        collectMilitaryManeuvers(string)
      when SECTION_MILITARY_STATUS
         collectMilitaryStatus(string)
      when SECTION_ARTIFACTS
@@ -188,6 +196,8 @@ class AlamazeTurnParser
         collectRegionFindGroup(string)
      when SECTION_REGIONAL_SUMMARY
         collectRegionalSummary(string)
+     when SECTION_POLITICAL_EVENTS
+        collectPoliticalEvents(string)
      when SECTION_DONT_CARE
         # do nothing
      else
@@ -203,6 +213,46 @@ class AlamazeTurnParser
      end
      if line.include? "GAME #"
         (x,x,@gameNumber)=line.split
+     end
+  end
+
+#[01234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789]
+#[     NIMBUS SIGN               (AREA MN), A HIGH RANKING EMISSARY OF THE WARLOCK KINGDOM HAS RELOCATED HERE.                                ]
+  def collectPoliticalEvents(line)
+     if line.include? "HAS RELOCATED HERE"
+        #puts "[01234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789]"
+        #printf("[%s]\n",line)
+        md=line.match(/.*\(AREA (\w+).*OF THE (\w+)/)
+        #print md
+        area=md[1]
+        banner=fixBanner(md[2][0..1])
+        name="#{@turnNumber}#{area}#{banner}-Unknown"
+        #printf("\n\narea=%s banner=%s name=%s\n", area, banner,name)
+        @emissaryInfo=Hash.new if @emissaryInfo == nil
+        @emissaryInfo[name]=Hash.new if @emissaryInfo[name] == nil
+        @emissaryInfo[name]['banner']=banner
+        @emissaryInfo[name]['rank']="Unknown"
+        @emissaryInfo[name]['area']=area
+        @emissaryInfo[name]['source']="Self"
+     end
+     if md=line.match(/IN AREA (\w\w) HAVE REBELLED/)
+        area=md[1]
+        @popCenterInfo=Hash.new if @popCenterInfo == nil
+        @popCenterInfo[area]=Hash.new if @popCenterInfo[area] == nil
+        #@popCenterInfo[area]['region']=""
+        @popCenterInfo[area]['banner']=nil
+        @popCenterInfo[area]['source']="Rebelled"
+        @politicalTempArea = area
+     end
+     #if md=line.match(/IT IS BELIEVED THE RANGER GOVERNOR NAMED SIR RICHARD PIERCE WAS/)
+     if md=line.match(/IT IS BELIEVED THE (\S+) (\S+) NAMED (.+) WAS/)
+        name=md[3]
+        @emissaryInfo=Hash.new if @emissaryInfo == nil
+        @emissaryInfo[name]=Hash.new if @emissaryInfo[name] == nil
+        @emissaryInfo[name]['banner']=fixBanner(md[1][0..1])
+        @emissaryInfo[name]['rank']=md[2]
+        @emissaryInfo[name]['area']=@politicalTempArea
+        @emissaryInfo[name]['source']="Political"
      end
   end
 
@@ -287,15 +337,31 @@ class AlamazeTurnParser
   end
 
   def collectMattersCovertEsotericAndGeneral(line)
-     return unless line.include? "AN ARTIFACT NAMED"
-     md = line.match(/AN ARTIFACT NAMED (.*) \(SHORT NAME (.*)\)/)
-     #printf("name(%s) short(%s)\n", md[1], md[2])
-     artifact=Hash.new
-     artifact[:source]="Priestess"
-     artifact[:fullName]=md[1].gsub(',','')
-     artifact[:shortName]=md[2]
-     @artifactInfo=Array.new if @artifactInfo == nil
-     @artifactInfo.push artifact
+     if md = line.match(/AN ARTIFACT NAMED (.*) \(SHORT NAME (.*)\)/)
+        #printf("name(%s) short(%s)\n", md[1], md[2])
+        artifact=Hash.new
+        artifact[:source]="Priestess"
+        artifact[:fullName]=md[1].gsub(',','')
+        artifact[:shortName]=md[2]
+        @artifactInfo=Array.new if @artifactInfo == nil
+        @artifactInfo.push artifact
+     end
+     if md = line.match(/THERE IS A (\S+) LOCATED IN AREA (\w\w)/)
+        area = md[2]
+        @popCenterInfo=Hash.new if @popCenterInfo == nil
+        @popCenterInfo[area]=Hash.new if @popCenterInfo[area] == nil
+        @popCenterInfo[area]['type']=md[1]
+        @popCenterInfo[area]['source']="Divined"
+     end
+     if md = line.match(/THERE IS A (\S+).* (\S+) LOCATED IN AREA (\w\w)/)
+        #p md
+        area = md[3]
+        @popCenterInfo=Hash.new if @popCenterInfo == nil
+        @popCenterInfo[area]=Hash.new if @popCenterInfo[area] == nil
+        @popCenterInfo[area]['banner']=fixBanner(md[1][0..1])
+        @popCenterInfo[area]['type']=md[2]
+        @popCenterInfo[area]['source']="Divined"
+     end
   
   end 
 
@@ -340,15 +406,16 @@ class AlamazeTurnParser
      return if line.include? "RESULT:"
      return if line.include? "nothing to report"
      return if line.include? "Raven Familiar"
-     return if line.strip.size < 60
      #puts "[01234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789]"
      #printf("[%s]\n",line)
+     #return if line.strip.size < 60
 
      # Darn line might be broken in two
      (area,x)=line.split
-     if area.size > 2    # not the first line
+     if area.size > 2  and @tempArtifactInfo != nil    # not the first line
         @tempArtifactInfo[:fullName] = line[51..83].strip
         @tempArtifactInfo[:shortName] = line[83..100].strip
+        @artifactInfo=Array.new if @artifactInfo == nil
         @artifactInfo.push @tempArtifactInfo
         @tempArtifactInfo = nil
      else
@@ -359,12 +426,28 @@ class AlamazeTurnParser
         if line.size > 60
            @tempArtifactInfo[:fullName] = line[51..83].strip
            @tempArtifactInfo[:shortName] = line[83..100].strip
+           @artifactInfo=Array.new if @artifactInfo == nil
            @artifactInfo.push @tempArtifactInfo
            @tempArtifactInfo = nil
         end
      end
   end
 
+
+  def collectMilitaryManeuvers(line)
+     return if line.include? "NO POPULATION CENTERS"
+     return if not line.include? "WE PASSED"
+     #printf("[%s]\n",line)
+     line.split(',').each do |part|
+        if md=part.match(/.* A (.*) AT (\w\w)/)
+           area=md[2]
+           @popCenterInfo=Hash.new if @popCenterInfo == nil
+           @popCenterInfo[area]=Hash.new if @popCenterInfo[area] == nil
+           @popCenterInfo[area]['type']=md[1]
+           @popCenterInfo[area]['source']="Passed"
+        end
+     end
+  end
   # Process the section of the turn results that lists
   # the current or forecasted production
   # forecast values will overwrite current ones.
@@ -384,7 +467,7 @@ class AlamazeTurnParser
      @popCenterInfo=Hash.new if @popCenterInfo == nil
      @popCenterInfo[area]=Hash.new if @popCenterInfo[area] == nil
      @popCenterInfo[area]['region']=region
-     @popCenterInfo[area]['banner']=@banner
+     @popCenterInfo[area]['banner']=@banner if  @popCenterInfo[area]['banner'] == nil
      @popCenterInfo[area]['name']=name
      @popCenterInfo[area]['type']=type
      @popCenterInfo[area]['defense']=defense
@@ -574,6 +657,18 @@ class AlamazeTurnParser
      @emissaryInfo[name]['rank']=rank
      @emissaryInfo[name]['area']=area
      @emissaryInfo[name]['source']="Self"
+
+
+     # We can pull some population center information from these lines as well.
+     md=line.match(/.* THE (.*) AT (\w\w) IN \w+/)
+     pcBanner=fixBanner(md[1][0..1])
+     pcType=md[1].split.last
+     area=md[2]
+     @popCenterInfo=Hash.new if @popCenterInfo == nil
+     @popCenterInfo[area]=Hash.new if @popCenterInfo[area] == nil
+     @popCenterInfo[area]['banner']=pcBanner
+     @popCenterInfo[area]['type']=pcType
+     @popCenterInfo[area]['source']="SelfEmLoc"
   end
 
   # 

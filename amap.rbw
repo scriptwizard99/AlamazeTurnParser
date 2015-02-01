@@ -29,7 +29,7 @@ require_relative 'emmyTool'
 
 $debug=0
 
-VERSION="0.3.2"
+VERSION="0.4.0"
 BOX_HEIGHT=14
 BOX_WIDTH=BOX_HEIGHT
 HISTORY_ALL=0
@@ -2827,7 +2827,7 @@ def initVars
 end
 
 initVars
-programName="Alamaze Data Miner"
+programName="Alamaze Turn Parser GUI"
 $root = TkRoot.new { title programName }
 bFrame=createMainDisplay($root)
 TkLabel.new(bFrame) do

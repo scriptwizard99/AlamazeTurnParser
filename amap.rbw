@@ -2502,7 +2502,7 @@ end
 
 def setupImage
    $bigImage = TkPhotoImage.new
-   $bigImage.file = "alamaze-resurgent.gif"
+   $bigImage.file = "graphics/alamaze-resurgent.gif"
    $bigW = $bigImage.width
    $bigH = $bigImage.height
 
@@ -2512,8 +2512,8 @@ def setupImage
 end
 
 def setupBM(banner,type,color)
-   bigBM = TkBitmapImage.new('file'=>"#{type}Big.xbm", 'foreground' => color)
-   smallBM = TkBitmapImage.new('file'=>"#{type}Small.xbm", 'foreground' => color)
+   bigBM = TkBitmapImage.new('file'=>"graphics/#{type}Big.xbm", 'foreground' => color)
+   smallBM = TkBitmapImage.new('file'=>"graphics/#{type}Small.xbm", 'foreground' => color)
    $kingdomBitmaps = Hash.new if $kingdomBitmaps == nil
    $kingdomBitmaps[banner] = Hash.new if $kingdomBitmaps[banner] == nil
    $kingdomBitmaps[banner][type] = Hash.new if $kingdomBitmaps[banner][type] == nil

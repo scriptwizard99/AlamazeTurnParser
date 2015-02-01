@@ -24,6 +24,7 @@
 
 require 'tk'
 require_relative 'emmyTool'
+require_relative 'emmyToolWindow'
 #require 'win32/sound'
 #include Win32
 
@@ -159,6 +160,7 @@ $history = TkVariable.new
 $cursorLoc = TkVariable.new
 $myGameInfoText = TkVariable.new
 $textWindow = nil
+$emmyToolText = nil
 
 
 $currentTopTag = 'small'
@@ -277,6 +279,9 @@ class Region
       else
          appendTextWithTag("WARNING: Region #{@name} already has info for turn #{turn}. Ignoring extra data \n",TEXT_TAG_WARNING) if $debug.to_i == 1
       end
+   end
+   def getName
+      return @name
    end
    def getTurnList
        if @turnList == nil
@@ -1556,14 +1561,15 @@ def showPopCenterData(area,turn)
       end
 
       ### TODO
+      EmmyToolWindow.new($influence.last, area)
       regionNum=p.getRegion
       region=$regionList.getRegionByNum(regionNum)
       return if region.nil?
       react=region.getLatestReaction
-      et=EmmyTool.new(p.getType,$influence.last,react, p.getArea, p.getName, region)
-      val=et.getNeutralScore
+      $emmyTool=EmmyTool.new(p.getType,$influence.last,react, p.getArea, p.getName, region)
+      val=$emmyTool.getNeutralScore
       appendText("Neutral Score = #{val}\n")
-      (one,two)=et.getChances("COUNT")
+      (one,two)=$emmyTool.getChances("COUNT")
       appendText("Count: oneStep = #{one}  twoSteps = #{two}\n")
       ### TODO
 end
@@ -2825,6 +2831,8 @@ def initVars
    $exploredAreas = Array.new
    $exploreDialog = nil
    $menuDialog = nil
+   $emmyDialog = nil
+   $emmyTool = nil
    setupImage
 end
 

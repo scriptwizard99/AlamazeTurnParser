@@ -110,6 +110,7 @@ class EmmyTool
    end
 
    def getChances(rank)
+      appendText("Computing chances for rank=#{rank}\n")
       return( [CHANCE_NA, CHANCE_NA]) if rank == nil
       rval =  $rankMap[rank[0..2]]
       if rval == nil 

@@ -41,6 +41,11 @@ class EmmyTool
    RANK_AMBASSADOR=0.2
    RANK_ENVOY=0.1
 
+   CHANCE_YES='yes'
+   CHANCE_MAYBE='maybe'
+   CHANCE_NO='no'
+   CHANCE_NA='N/A'
+
    $popMap = {
       'V' => POP_VILLAGE,
       'T' => POP_TOWN,
@@ -58,6 +63,7 @@ class EmmyTool
       'PRI' => RANK_PRINCE,
       'DUK' => RANK_DUKE,
       'DUT' => RANK_DUKE,
+      'COU' => RANK_COUNT,
       'BAR' => RANK_BARON,
       'PRO' => RANK_GOVERNOR,
       'GOV' => RANK_GOVERNOR,
@@ -68,25 +74,53 @@ class EmmyTool
    def initialize(popType, influence, regionalReaction, 
                   popLoc=nil, popName=nil, regionName=nil)
       #puts "pt=#{popType} i=#{influence} rr=#{regionalReaction}"
-      if popType == nil or popType.empty?
-         @popType = 0
-      else
-         @popType = $popMap[popType[0]]
-      end
-      if regionalReaction == nil
-         @regReact = 0
-      else
-         @regReact = $reactionMap[regionalReaction[0]]
-      end
+      setPopType(popType)
+      setRegionalReact(regionalReaction)
       @influence = influence
       @popLoc = popLoc
       @popName = popName
       @regionName = regionName
       @neutralScore = @popType.to_f * @regReact.to_f
    end
+
+   def setPopType(popType)
+      if popType == nil or popType.empty?
+         @popType = 0
+      else
+         @popType = $popMap[popType[0]]
+      end
+   end
+
+   def setRegionalReact(regionalReaction)
+      if regionalReaction == nil
+         @regReact = 0
+      else
+         @regReact = $reactionMap[regionalReaction[0]]
+      end
+   end
    
    def getNeutralScore
       return @neutralScore
+   end
+
+   def getChance(difficulty, powerMin, powerMax)
+      return CHANCE_YES if powerMin.to_f > difficulty.to_f
+      return CHANCE_NO if powerMax.to_f < difficulty.to_f
+      return CHANCE_MAYBE
+   end
+
+   def getChances(rank)
+      return( [CHANCE_NA, CHANCE_NA]) if rank == nil
+      rval =  $rankMap[rank[0..2]]
+      if rval == nil 
+         return( [CHANCE_NA, CHANCE_NA])
+      end
+      power = @influence.to_f * rval.to_f
+      powerMin = power * 0.9
+      powerMax = power * 1.1
+      oneStep = getChance(@neutralScore.to_f, powerMin, powerMax)
+      twoSteps = getChance(@neutralScore.to_f * 2.0, powerMin, powerMax)
+      return([oneStep,twoSteps])
    end
 
    def getInfo

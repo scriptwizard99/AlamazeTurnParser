@@ -1560,9 +1560,11 @@ def showPopCenterData(area,turn)
       region=$regionList.getRegionByNum(regionNum)
       return if region.nil?
       react=region.getLatestReaction
-      et=EmmyTool.new(p.getType,nil,react)
+      et=EmmyTool.new(p.getType,$influence.last,react, p.getArea, p.getName, region)
       val=et.getNeutralScore
       appendText("Neutral Score = #{val}\n")
+      (one,two)=et.getChances("COUNT")
+      appendText("Count: oneStep = #{one}  twoSteps = #{two}\n")
       ### TODO
 end
 

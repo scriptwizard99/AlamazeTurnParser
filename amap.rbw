@@ -29,7 +29,7 @@ require_relative 'emmyTool'
 
 $debug=0
 
-VERSION="0.3.1"
+VERSION="0.3.2"
 BOX_HEIGHT=14
 BOX_WIDTH=BOX_HEIGHT
 HISTORY_ALL=0

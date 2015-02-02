@@ -228,8 +228,8 @@ class RegionList
          appendText(@list[index].toString)
       end
       showRegionalLeaders
-      tagText("FRIENDLY", TEXT_TAG_GOOD)
-      tagText("HOSTILE", TEXT_TAG_DANGER)
+      tagText($textBox, "FRIENDLY", TEXT_TAG_GOOD)
+      tagText($textBox, "HOSTILE", TEXT_TAG_DANGER)
    end
    def saveDataToFile(ofile)
       @list.each do |area,region|
@@ -1562,15 +1562,15 @@ def showPopCenterData(area,turn)
 
       ### TODO
       EmmyToolWindow.new($influence.last, area)
-      regionNum=p.getRegion
-      region=$regionList.getRegionByNum(regionNum)
-      return if region.nil?
-      react=region.getLatestReaction
-      $emmyTool=EmmyTool.new(p.getType,$influence.last,react, p.getArea, p.getName, region)
-      val=$emmyTool.getNeutralScore
-      appendText("Neutral Score = #{val}\n")
-      (one,two)=$emmyTool.getChances("COUNT")
-      appendText("Count: oneStep = #{one}  twoSteps = #{two}\n")
+      #regionNum=p.getRegion
+      #region=$regionList.getRegionByNum(regionNum)
+      #return if region.nil?
+      #react=region.getLatestReaction
+      #$emmyTool=EmmyTool.new(p.getType,$influence.last,react, p.getArea, p.getName, region)
+      #val=$emmyTool.getNeutralScore
+      #appendText("Neutral Score = #{val}\n")
+      #(one,two)=$emmyTool.getChances("COUNT")
+      #appendText("Count: oneStep = #{one}  twoSteps = #{two}\n")
       ### TODO
 end
 
@@ -1747,18 +1747,21 @@ def saveAsData
   end
 end
 
-def appendTextWithTag(string,tag)
+def appendTextWithTag(string,tag,tb=nil)
    createTextWindow
-   $textBox.insert('end',string, tag)
+   tb=$textBox if tb.nil?
+   tb.insert('end',string, tag)
 end
 
-def appendText(string)
-   appendTextWithTag(string,TEXT_TAG_NORMAL)
+def appendText(string,tb=nil)
+   tb=$textBox if tb.nil?
+   appendTextWithTag(string,TEXT_TAG_NORMAL,tb)
 end
 
-def clearText
+def clearText(tb=nil)
    createTextWindow
-   $textBox.delete(1.0,'end')
+   tb=$textBox if tb.nil?
+   tb.delete(1.0,'end')
 end
 
 def getCenter(loc)
@@ -2283,18 +2286,18 @@ def createSearchParts(frame)
    filterFrame.pack('side'=>'top')
 end
 
-def tagText(pattern,tag)
+def tagText(textBox,pattern,tag)
    start="1.0"
-   $textBox.mark_set("matchStart",start)
-   $textBox.mark_set("matchEnd",start)
-   $textBox.mark_set("searchLimit",'end')
+   textBox.mark_set("matchStart",start)
+   textBox.mark_set("matchEnd",start)
+   textBox.mark_set("searchLimit",'end')
    done = false
    while done == false
-      index = $textBox.search(pattern, "matchEnd", "searchLimit")
+      index = textBox.search(pattern, "matchEnd", "searchLimit")
       return  if index == ""
-      $textBox.mark_set("matchStart", index)
-      $textBox.mark_set("matchEnd", "#{index} wordend")
-      $textBox.tag_add(tag,"matchStart", "matchEnd")
+      textBox.mark_set("matchStart", index)
+      textBox.mark_set("matchEnd", "#{index} wordend")
+      textBox.tag_add(tag,"matchStart", "matchEnd")
    end
 end
 

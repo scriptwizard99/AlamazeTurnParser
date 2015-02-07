@@ -62,7 +62,7 @@ class EmmyTool
    $rankMap = {
       'PRI' => RANK_PRINCE,
       'DUK' => RANK_DUKE,
-      'DUT' => RANK_DUKE,
+      'DUC' => RANK_DUKE,
       'COU' => RANK_COUNT,
       'BAR' => RANK_BARON,
       'PRO' => RANK_GOVERNOR,
@@ -110,7 +110,6 @@ class EmmyTool
    end
 
    def getChances(rank)
-      appendText("Computing chances for rank=#{rank}\n")
       return( [CHANCE_NA, CHANCE_NA]) if rank == nil
       rval =  $rankMap[rank[0..2]]
       if rval == nil 

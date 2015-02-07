@@ -128,8 +128,8 @@ class EmmyToolWindow
 
       scroll = nil
       tb = TkText.new(bottomFrame) {
-         height   '10'
-         width   '60'
+         height   '15'
+         width   '70'
          font   textFont
          background 'lightgrey'
          pack('side' => 'left', 'fill' => 'both', 'expand' => 1)
@@ -166,9 +166,27 @@ class EmmyToolWindow
       bottomFrame.pack('side' => 'top', 'fill' => 'both', 'expand' => 1)
 
       mainEmmyFrame.pack('fill' => 'both','expand' => 1)
+
+      $emmyTextBox.bind('1', proc { self.emmyClick } )
+
+   end
+
+   def emmyClick
+         line = $emmyTextBox.get('current linestart', 'current lineend')
+         loc = line.split[0]
+         highlightTag("box-#{loc}",true)
+         #appendText( "clicked in box\n", $emmyTextBox)
+         #appendText( "line[#{line}]\n", $emmyTextBox)
    end
 
    def alterInfluence(entry)
+      # TODO - find bug
+      #influence=entry.get
+      #@influence=influence if influence.to_i > 8.0
+      #setLocationFromEntry
+      # TODO - find bug
+      entry.delete(0,'end')
+      entry.insert('end',@influence)
    end
    
    def setReactionFromRegion(regNum)
@@ -219,15 +237,22 @@ class EmmyToolWindow
 
    def fillEmmyWindow(tool)
 
+      appendTextWithTag(" LOC         Emissary Name         Emissary Rank      1Step  2Steps \n", TEXT_TAG_HEADING, $emmyTextBox)
+      appendTextWithTag("-----  ------------------------- -------------------- ------ ------\n", TEXT_TAG_HEADING, $emmyTextBox)
+
       # get a list of emissary objects
       myEmissaries = $emissaryList.getEmissaryByKingdom($myKingdom)
       myEmissaries.each do | emmy |
          next if emmy.isPolitical == false
          lastTurn = emmy.getLastTurn
-         line = emmy.toString( lastTurn)
+         next if lastTurn < $currentTurn
+         #line = emmy.toString( lastTurn)
          rank = emmy.getRank(lastTurn)
          (oneStep,twoSteps) = tool.getChances(rank)
-         line=sprintf("%-60s %-5s %-5s\n", line.chomp, oneStep, twoSteps)
+         line=sprintf(" %2.2s     %-25s %-20s %-5s  %-5s\n",
+                      emmy.getLocOnTurn(lastTurn),
+                      emmy.getName, rank, oneStep, twoSteps)
+         #line=sprintf("%-60s %-5s %-5s\n", line.chomp, oneStep, twoSteps)
          appendText( line, $emmyTextBox)
       end
 

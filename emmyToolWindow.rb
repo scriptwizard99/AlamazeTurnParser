@@ -29,6 +29,7 @@
 
 class EmmyToolWindow
 
+
       $curPopType = TkVariable.new
       $curRegName = TkVariable.new
 
@@ -129,7 +130,7 @@ class EmmyToolWindow
       scroll = nil
       tb = TkText.new(bottomFrame) {
          height   '15'
-         width   '70'
+         width   '80'
          font   textFont
          background 'lightgrey'
          pack('side' => 'left', 'fill' => 'both', 'expand' => 1)
@@ -235,10 +236,20 @@ class EmmyToolWindow
       clearText($emmyTextBox)
    end
 
+   def getInRangeString(distance)
+      if (distance == 0)
+         return "HERE!"
+      elsif (distance <= 10)
+         return "yes"
+      else
+         return "no"
+      end
+   end
+
    def fillEmmyWindow(tool)
 
-      appendTextWithTag(" LOC         Emissary Name         Emissary Rank      1Step  2Steps \n", TEXT_TAG_HEADING, $emmyTextBox)
-      appendTextWithTag("-----  ------------------------- -------------------- ------ ------\n", TEXT_TAG_HEADING, $emmyTextBox)
+      appendTextWithTag(" LOC         Emissary Name         Emissary Rank      1Step  2Steps InRange\n", TEXT_TAG_HEADING, $emmyTextBox)
+      appendTextWithTag("-----  ------------------------- -------------------- ------ ------ -------\n", TEXT_TAG_HEADING, $emmyTextBox)
 
       # get a list of emissary objects
       myEmissaries = $emissaryList.getEmissaryByKingdom($myKingdom)
@@ -248,15 +259,18 @@ class EmmyToolWindow
          next if lastTurn < $currentTurn
          #line = emmy.toString( lastTurn)
          rank = emmy.getRank(lastTurn)
+         emLoc = emmy.getLocOnTurn(lastTurn)
+         distance = $areaList.computeDistance(@area,emLoc)
          (oneStep,twoSteps) = tool.getChances(rank)
-         line=sprintf(" %2.2s     %-25s %-20s %-5s  %-5s\n",
+         line=sprintf(" %2.2s     %-25s %-20s %-5s  %-5s  %-5s\n",
                       emmy.getLocOnTurn(lastTurn),
-                      emmy.getName, rank, oneStep, twoSteps)
+                      emmy.getName, rank, oneStep, twoSteps, getInRangeString(distance.to_i))
          #line=sprintf("%-60s %-5s %-5s\n", line.chomp, oneStep, twoSteps)
          appendText( line, $emmyTextBox)
       end
 
       tagText($emmyTextBox, "yes",   TEXT_TAG_GOOD)
+      tagText($emmyTextBox, "HERE!",   TEXT_TAG_GOOD)
       tagText($emmyTextBox, "maybe", TEXT_TAG_WARNING)
       tagText($emmyTextBox, "no",    TEXT_TAG_DANGER)
    end

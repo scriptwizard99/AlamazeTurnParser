@@ -363,6 +363,13 @@ class AreaList
       return nil if @smallList[loc] == nil
       return @smallList[loc].getGroupList
    end
+   def computeDistance(loc1, loc2)
+      return 999 if loc1 == nil or loc1.empty?
+      return 999 if loc2 == nil or loc2.empty?
+      yPart = loc1[0].ord - loc2[0].ord
+      xPart = loc1[1].ord - loc2[1].ord
+      return xPart.abs + yPart.abs
+   end
 end # class AreaList
 
 #--------------------------------------------------------------------------

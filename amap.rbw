@@ -24,12 +24,13 @@
 
 require 'tk'
 require_relative 'emmyTool'
+require_relative 'emmyToolWindow'
 #require 'win32/sound'
 #include Win32
 
 $debug=0
 
-VERSION="0.3.2"
+VERSION="0.4.0"
 BOX_HEIGHT=14
 BOX_WIDTH=BOX_HEIGHT
 HISTORY_ALL=0
@@ -159,6 +160,7 @@ $history = TkVariable.new
 $cursorLoc = TkVariable.new
 $myGameInfoText = TkVariable.new
 $textWindow = nil
+$emmyToolText = nil
 
 
 $currentTopTag = 'small'
@@ -226,8 +228,8 @@ class RegionList
          appendText(@list[index].toString)
       end
       showRegionalLeaders
-      tagText("FRIENDLY", TEXT_TAG_GOOD)
-      tagText("HOSTILE", TEXT_TAG_DANGER)
+      tagText($textBox, "FRIENDLY", TEXT_TAG_GOOD)
+      tagText($textBox, "HOSTILE", TEXT_TAG_DANGER)
    end
    def saveDataToFile(ofile)
       @list.each do |area,region|
@@ -277,6 +279,9 @@ class Region
       else
          appendTextWithTag("WARNING: Region #{@name} already has info for turn #{turn}. Ignoring extra data \n",TEXT_TAG_WARNING) if $debug.to_i == 1
       end
+   end
+   def getName
+      return @name
    end
    def getTurnList
        if @turnList == nil
@@ -357,6 +362,13 @@ class AreaList
    def getGroupList(loc)
       return nil if @smallList[loc] == nil
       return @smallList[loc].getGroupList
+   end
+   def computeDistance(loc1, loc2)
+      return 999 if loc1 == nil or loc1.empty?
+      return 999 if loc2 == nil or loc2.empty?
+      yPart = loc1[0].ord - loc2[0].ord
+      xPart = loc1[1].ord - loc2[1].ord
+      return xPart.abs + yPart.abs
    end
 end # class AreaList
 
@@ -1556,13 +1568,16 @@ def showPopCenterData(area,turn)
       end
 
       ### TODO
-      regionNum=p.getRegion
-      region=$regionList.getRegionByNum(regionNum)
-      return if region.nil?
-      react=region.getLatestReaction
-      et=EmmyTool.new(p.getType,nil,react)
-      val=et.getNeutralScore
-      appendText("Neutral Score = #{val}\n")
+      EmmyToolWindow.new($influence.last, area)
+      #regionNum=p.getRegion
+      #region=$regionList.getRegionByNum(regionNum)
+      #return if region.nil?
+      #react=region.getLatestReaction
+      #$emmyTool=EmmyTool.new(p.getType,$influence.last,react, p.getArea, p.getName, region)
+      #val=$emmyTool.getNeutralScore
+      #appendText("Neutral Score = #{val}\n")
+      #(one,two)=$emmyTool.getChances("COUNT")
+      #appendText("Count: oneStep = #{one}  twoSteps = #{two}\n")
       ### TODO
 end
 
@@ -1739,18 +1754,21 @@ def saveAsData
   end
 end
 
-def appendTextWithTag(string,tag)
+def appendTextWithTag(string,tag,tb=nil)
    createTextWindow
-   $textBox.insert('end',string, tag)
+   tb=$textBox if tb.nil?
+   tb.insert('end',string, tag)
 end
 
-def appendText(string)
-   appendTextWithTag(string,TEXT_TAG_NORMAL)
+def appendText(string,tb=nil)
+   tb=$textBox if tb.nil?
+   appendTextWithTag(string,TEXT_TAG_NORMAL,tb)
 end
 
-def clearText
+def clearText(tb=nil)
    createTextWindow
-   $textBox.delete(1.0,'end')
+   tb=$textBox if tb.nil?
+   tb.delete(1.0,'end')
 end
 
 def getCenter(loc)
@@ -2275,18 +2293,18 @@ def createSearchParts(frame)
    filterFrame.pack('side'=>'top')
 end
 
-def tagText(pattern,tag)
+def tagText(textBox,pattern,tag)
    start="1.0"
-   $textBox.mark_set("matchStart",start)
-   $textBox.mark_set("matchEnd",start)
-   $textBox.mark_set("searchLimit",'end')
+   textBox.mark_set("matchStart",start)
+   textBox.mark_set("matchEnd",start)
+   textBox.mark_set("searchLimit",'end')
    done = false
    while done == false
-      index = $textBox.search(pattern, "matchEnd", "searchLimit")
+      index = textBox.search(pattern, "matchEnd", "searchLimit")
       return  if index == ""
-      $textBox.mark_set("matchStart", index)
-      $textBox.mark_set("matchEnd", "#{index} wordend")
-      $textBox.tag_add(tag,"matchStart", "matchEnd")
+      textBox.mark_set("matchStart", index)
+      textBox.mark_set("matchEnd", "#{index} wordend")
+      textBox.tag_add(tag,"matchStart", "matchEnd")
    end
 end
 
@@ -2502,7 +2520,7 @@ end
 
 def setupImage
    $bigImage = TkPhotoImage.new
-   $bigImage.file = "alamaze-resurgent.gif"
+   $bigImage.file = "graphics/alamaze-resurgent.gif"
    $bigW = $bigImage.width
    $bigH = $bigImage.height
 
@@ -2512,8 +2530,8 @@ def setupImage
 end
 
 def setupBM(banner,type,color)
-   bigBM = TkBitmapImage.new('file'=>"#{type}Big.xbm", 'foreground' => color)
-   smallBM = TkBitmapImage.new('file'=>"#{type}Small.xbm", 'foreground' => color)
+   bigBM = TkBitmapImage.new('file'=>"graphics/#{type}Big.xbm", 'foreground' => color)
+   smallBM = TkBitmapImage.new('file'=>"graphics/#{type}Small.xbm", 'foreground' => color)
    $kingdomBitmaps = Hash.new if $kingdomBitmaps == nil
    $kingdomBitmaps[banner] = Hash.new if $kingdomBitmaps[banner] == nil
    $kingdomBitmaps[banner][type] = Hash.new if $kingdomBitmaps[banner][type] == nil
@@ -2823,11 +2841,13 @@ def initVars
    $exploredAreas = Array.new
    $exploreDialog = nil
    $menuDialog = nil
+   $emmyDialog = nil
+   $emmyTool = nil
    setupImage
 end
 
 initVars
-programName="Alamaze Data Miner"
+programName="Alamaze Turn Parser GUI"
 $root = TkRoot.new { title programName }
 bFrame=createMainDisplay($root)
 TkLabel.new(bFrame) do

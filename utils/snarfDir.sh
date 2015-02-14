@@ -11,7 +11,7 @@ for target in $fileList
 do
    fname=`basename $target`
    echo "Processing $fname"
-   ./parse1.rb $1/$fname > "${fname}.dat"
+   parse1.rb $1/$fname > "${fname}.dat"
 done
 
 echo "done."

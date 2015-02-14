@@ -2451,7 +2451,7 @@ def createTextBox(frame)
 
    #textFont = TkFont.new( "weight" => "bold")
 
-   textFont = TkFont.new( 'family' => 'courier',
+   textFont = TkFont.new( 'family' => 'consolas',
                           'weight' => 'normal',
                           'size' => 10)
 
@@ -2484,7 +2484,7 @@ def createTextBox(frame)
 #  $textBox.tag_add('danger')
 #  $textBox.tag_add('warning')
    $textBox.tag_configure(TEXT_TAG_TITLE, :background=>'darkgrey', :font=>'helvetica 14 bold', :relief=>'raised')
-   $textBox.tag_configure(TEXT_TAG_HEADING, :background=>'darkgrey',:font=>'courier 10 bold', :relief=>'raised' )
+   $textBox.tag_configure(TEXT_TAG_HEADING, :background=>'darkgrey',:font=>'consolas 10 bold', :relief=>'raised' )
    $textBox.tag_configure(TEXT_TAG_NORMAL, :background=>'lightgrey', :font=>textFont, :relief => 'flat' )
    $textBox.tag_configure(TEXT_TAG_GOOD, :foreground=>'#156f08' )
    #$textBox.tag_configure(TEXT_TAG_WARNING, :background=>'darkgrey', :foreground=>'#dd8d12' )

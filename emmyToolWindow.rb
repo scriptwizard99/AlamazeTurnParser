@@ -123,7 +123,7 @@ class EmmyToolWindow
       #----------------------------------
       # Bottom frame has text window
       #----------------------------------
-      textFont = TkFont.new( 'family' => 'courier',
+      textFont = TkFont.new( 'family' => 'consolas',
                              'weight' => 'normal',
                              'size' => 10)
 
@@ -153,7 +153,7 @@ class EmmyToolWindow
       $emmyTextBox.tag_add(TEXT_TAG_DANGER,'end')
 
       $emmyTextBox.tag_configure(TEXT_TAG_TITLE, :background=>'darkgrey', :font=>'helvetica 14 bold', :relief=>'raised')
-      $emmyTextBox.tag_configure(TEXT_TAG_HEADING, :background=>'darkgrey',:font=>'courier 10 bold', :relief=>'raised' )
+      $emmyTextBox.tag_configure(TEXT_TAG_HEADING, :background=>'darkgrey',:font=>'consolas 10 bold', :relief=>'raised' )
       $emmyTextBox.tag_configure(TEXT_TAG_NORMAL, :background=>'lightgrey', :font=>textFont, :relief => 'flat' )
       $emmyTextBox.tag_configure(TEXT_TAG_GOOD, :foreground=>'#156f08' )
       $emmyTextBox.tag_configure(TEXT_TAG_WARNING, :foreground=>'orange' )

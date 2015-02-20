@@ -1,4 +1,4 @@
-#!/usr/bin/ruby
+#!/cygdrive/c/Ruby193/bin/ruby
 =begin
     Alamaze Turn Parser - Extracts portions of Alamaze PDF turn results
     and outputs the data in CSV format.
@@ -36,7 +36,7 @@ if filename.nil?
    exit 1
 end
 
-VERSION="0.4.0"
+VERSION="1.0.0"
 
 class AlamazeTurnParser
 

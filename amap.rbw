@@ -30,7 +30,7 @@ require_relative 'emmyToolWindow'
 
 $debug=0
 
-VERSION="0.4.0"
+VERSION="1.0.0"
 BOX_HEIGHT=14
 BOX_WIDTH=BOX_HEIGHT
 HISTORY_ALL=0
@@ -2521,6 +2521,7 @@ end
 def setupImage
    $bigImage = TkPhotoImage.new
    $bigImage.file = "graphics/alamaze-resurgent.gif"
+   #$bigImage.file = "/users/jgibbs/Documents/GitHub/AlamazeTurnParser/graphics/alamaze-resurgent.gif"
    $bigW = $bigImage.width
    $bigH = $bigImage.height
 
@@ -2530,6 +2531,8 @@ def setupImage
 end
 
 def setupBM(banner,type,color)
+   #bigBM = TkBitmapImage.new('file'=>"/users/jgibbs/Documents/GitHub/AlamazeTurnParser/graphics/#{type}Big.xbm", 'foreground' => color)
+   #smallBM = TkBitmapImage.new('file'=>"/users/jgibbs/Documents/GitHub/AlamazeTurnParser/graphics/#{type}Small.xbm", 'foreground' => color)
    bigBM = TkBitmapImage.new('file'=>"graphics/#{type}Big.xbm", 'foreground' => color)
    smallBM = TkBitmapImage.new('file'=>"graphics/#{type}Small.xbm", 'foreground' => color)
    $kingdomBitmaps = Hash.new if $kingdomBitmaps == nil
@@ -2846,21 +2849,32 @@ def initVars
    setupImage
 end
 
-initVars
-programName="Alamaze Turn Parser GUI"
-$root = TkRoot.new { title programName }
-bFrame=createMainDisplay($root)
-TkLabel.new(bFrame) do
-   textvariable $cursorLoc
-   pack { side 'left' }
+#===============================================================================
+#===============================================================================
+#===============================================================================
+begin 
+   initVars
+   programName="Alamaze Turn Parser GUI"
+   $root = TkRoot.new { title programName }
+   bFrame=createMainDisplay($root)
+   TkLabel.new(bFrame) do
+      textvariable $cursorLoc
+      pack { side 'left' }
+   end
+   setupKingdomBitmaps
+   
+   appendTextWithTag("#{programName} Version #{VERSION}\n", TEXT_TAG_TITLE)
+   
+   tweakVolume
+
+   
+   Tk.mainloop
+rescue Exception => e
+   File.open("parserGui.err","w+") do |f|
+      f.puts "Problem trying to run GUI."
+      f.puts e.inspect
+      f.puts e.backtrace
+   end
 end
-setupKingdomBitmaps
 
-appendTextWithTag("#{programName} Version #{VERSION}\n", TEXT_TAG_TITLE)
-
-tweakVolume
-
-#  lich = TkPhotoImage.new
-#  lich.file = "lich.gif"
-
-Tk.mainloop
+exit 0

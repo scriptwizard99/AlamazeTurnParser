@@ -25,12 +25,13 @@
 require 'tk'
 require_relative 'emmyTool'
 require_relative 'emmyToolWindow'
+require_relative 'alamazeTurnParser'
 #require 'win32/sound'
 #include Win32
 
 $debug=0
 
-VERSION="1.0.0"
+VERSION="1.0.1"
 BOX_HEIGHT=14
 BOX_WIDTH=BOX_HEIGHT
 HISTORY_ALL=0
@@ -160,7 +161,7 @@ $history = TkVariable.new
 $cursorLoc = TkVariable.new
 $myGameInfoText = TkVariable.new
 $textWindow = nil
-$emmyToolText = nil
+#$emmyToolText = nil
 
 
 $currentTopTag = 'small'
@@ -1643,7 +1644,7 @@ def showPopCentersByRegion
 end
 
 def loadDocument(filename)
-  clearText
+  #clearText
   appendText("Loading data from #{filename}\n")
   IO.foreach(filename) { |line|
      appendTextWithTag("Data file contains warnings.\n",TEXT_TAG_WARNING) if line.match(/WARNING/)
@@ -1680,6 +1681,7 @@ def loadDocument(filename)
 end
 
 def openDocument
+  clearText
   filetypes = [ ["Parser Data Files", "*.dat"],["All Files", "*"] ]
   filename = Tk.getOpenFile('filetypes' => filetypes,
                             'parent' => $root )
@@ -1693,9 +1695,26 @@ def runParser(filename)
    clearText
    tempFile = "ofile.dat"
    File.delete(tempFile) if File.exists?(tempFile)
-   cmd="ruby parse1.rb #{filename} > #{tempFile}"
+   #cmd="ruby parse1.rb #{filename} > #{tempFile}"
    appendText("Attempting to parse #{filename}\n")
-   system(cmd)
+
+   ofile = File.new(tempFile, File::CREAT|File::TRUNC|File::RDWR)
+   if ofile == nil or File.writable?(tempFile) == false
+      appendTextWithTag("Failure opening #{tempFile} for writing. Parsing FAILED!\n", TEXT_TAG_DANGER)
+      return
+   end
+
+   receiver = AlamazeTurnParser.new
+   pdf = PDF::Reader.file(filename,receiver)
+   receiver.showInfoRecord(ofile)
+   receiver.showPopInfo(ofile)
+   receiver.showEmissaryInfo(ofile)
+   receiver.showArmies(ofile)
+   receiver.showArtifactInfo(ofile)
+   receiver.showRegionalInfo(ofile)
+   ofile.close
+
+
    loadDocument(tempFile)
 end
 
@@ -2844,8 +2863,8 @@ def initVars
    $exploredAreas = Array.new
    $exploreDialog = nil
    $menuDialog = nil
+   $emmyDialog.destroy if TkWinfo.exist?($emmyDialog)
    $emmyDialog = nil
-   $emmyTool = nil
    setupImage
 end
 

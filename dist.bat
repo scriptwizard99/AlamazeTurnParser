@@ -6,5 +6,5 @@ rem = Ruby installed on their machine. The binary is fully self contained.
 rem =
 rem = For debug, append --verbose --debug --debug-extract to the end of the command
 rem ==========================================================================
-ocra --chdir-first --no-dep-run --add-all-core --windows amap.rbw *.rb graphics\* \ruby193\lib\tcltk\**\* \Ruby193\bin\tk85.dll 
+ocra --chdir-first --no-dep-run --add-all-core --gem-full --windows amap.rbw *.rb graphics\* \ruby193\lib\tcltk\**\* \Ruby193\lib\ruby\gems\**\* \Ruby193\bin\tk85.dll 
 

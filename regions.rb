@@ -40,12 +40,34 @@ $regionMap = {
 # CLASS: RegionList
 #--------------------------------------------------------------------------
 class RegionList
+
+   REGION_INFO_FILE="data/RegionBorders.csv"
+
+   @list           # Hash of Region objects
+   @regionLocMap   # Map of area to regionNumber
+
    def initialize
       @list=Hash.new
       $regionMap.keys.each do |regNum|
          @list[regNum] = Region.new( regNum,  $regionMap[regNum] )
       end
+      #readRegionBorderFile
    end
+
+   def readRegionBorderFile
+      appendText("Reading region border information from #{REGION_INFO_FILE}\n")
+      @regionLocMap=Hash.new
+      IO.foreach(REGION_INFO_FILE) do |line|
+         #$stderr.puts line
+         (area,junk,regNum)=line.split(',')
+         @regionLocMap[area]=regNum
+      end
+   end
+
+   def getRegionByArea(area)
+      return @regionLocMap[area]
+   end
+
    def getNumControlled(banner)
       count = 0
       @list.keys.each do |regNum|

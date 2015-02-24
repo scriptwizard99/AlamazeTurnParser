@@ -32,7 +32,8 @@ require_relative 'alamazeTurnParser'
 
 $debug=0
 
-VERSION="1.0.1"
+VERSION="1.1.0"
+
 BOX_HEIGHT=14
 BOX_WIDTH=BOX_HEIGHT
 HISTORY_ALL=0
@@ -454,6 +455,35 @@ class PopCenterList
    def changeOwner(area,owner)
       @list[area].changeOwner(owner)
    end
+
+   def fixRegions
+      appendText("Fixing Regions.\n\n")
+      numUpdated=0
+      @list.each do |area,popCenter|
+         needsFixin=false
+         regNum = popCenter.getRegion
+         newReg = $regionList.getRegionByArea(area)
+         if regNum.nil? or regNum.empty? 
+            appendText("Updating popCenter at #{area} with region #{newReg}.\n")
+            needsFixin=true
+         elsif regNum != newReg
+            # We cheat and use region number "X" to denote a destroyed PC
+            if regNum != "X"
+               appendText("Updating popCenter at #{area} with region #{newReg}. Had been incorrectly set to #{regNum}.\n")
+               needsFixin=true
+            end
+         end
+         if needsFixin
+            numUpdated += 1
+            popCenter.setRegion(newReg)
+            addColoredMapMarker(area, popCenter.getType[0], popCenter.getLastKnownOwner, popCenter.getRegion)
+            highlightTag("box-#{area}",false)
+         end
+      end
+      appendText("\nUpdated #{numUpdated} population centers.\n")
+      appendText("Do not forget to save!\n") if numUpdated > 0
+   end # end fixRegions
+
 end # end class PopCenterList
 
 #--------------------------------------------------------------------------
@@ -578,6 +608,9 @@ class PopCenter
     end
     def getRegion
        return @region
+    end
+    def setRegion(regNum)
+       @region=regNum
     end
     def saveDataToFile(ofile)
       getTurnList.each do |turn|
@@ -1851,6 +1884,11 @@ def setupMenus(root)
                  'command'   => proc { createAddExploredDialog },
                  'underline' => 5)
    
+   map_menu.add('command',
+                 'label'     => "Fix Regions...",
+                 'command'   => proc { fixRegions },
+                 'underline' => 4)
+   
    menu_bar.add('cascade',
                 'menu'  => map_menu,
                 'label' => "Map")
@@ -2189,6 +2227,12 @@ def shiftValues(from,to,highlight)
    end
 end
 
+def fixRegions
+   clearText
+   $regionList.readRegionBorderFile
+   $popCenterList.fixRegions
+end
+
 def markExploredFromLB(lb)
    unHighlight
    areaList = lb.get(0,'end')
@@ -2278,7 +2322,7 @@ def createTextWindow
    #return if $textWindow != nil and $textWindow.exists
    return if TkWinfo.exist?($textWindow)
    $textWindow = TkToplevel.new($root) do
-      title 'Text Output'
+      title "Text Output (v#{VERSION})"
    end
    frame = TkFrame.new($textWindow) do
       relief 'sunken'
@@ -2698,7 +2742,7 @@ end
 #===============================================================================
 begin 
    initVars
-   programName="Alamaze Turn Parser GUI"
+   programName="Alamaze Turn Parser GUI (v#{VERSION})"
    $root = TkRoot.new { title programName }
    bFrame=createMainDisplay($root)
    TkLabel.new(bFrame) do
@@ -2707,7 +2751,7 @@ begin
    end
    setupKingdomBitmaps
    
-   appendTextWithTag("#{programName} Version #{VERSION}\n", TEXT_TAG_TITLE)
+   appendTextWithTag("#{programName}\n", TEXT_TAG_TITLE)
    
    tweakVolume
 

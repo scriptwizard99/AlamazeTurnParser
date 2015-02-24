@@ -23,6 +23,7 @@
 =end
 
 require 'tk'
+require_relative 'regions'
 require_relative 'emmyTool'
 require_relative 'emmyToolWindow'
 require_relative 'alamazeTurnParser'
@@ -31,7 +32,8 @@ require_relative 'alamazeTurnParser'
 
 $debug=0
 
-VERSION="1.0.1"
+VERSION="1.1.0"
+
 BOX_HEIGHT=14
 BOX_WIDTH=BOX_HEIGHT
 HISTORY_ALL=0
@@ -81,29 +83,6 @@ $kingdomColors = {
     EXPLORED_MARKER => EXPLORED_COLOR
 }
 
-$terrainHash = { 
-    'p' => '#d6eed1',
-    'f' => '#9dc992',
-    'm' => '#d08b8b',
-    'd' => '#ece09b',
-    's' => 'darkgrey',
-    'w' => '#acf7f9',
-}
-
-$regionMap = {
-   '-1' => 'unknown',
-    '0' => 'destroyed',
-    '1' => 'OAKENDELL',
-    '2' => 'THE NORTHERN MISTS',
-    '3' => 'THE TALKING MOUNTAINS',
-    '4' => 'TORVALE',
-    '5' => 'AMBERLAND',
-    '6' => 'THE EASTERN STEPPES',
-    '7' => 'RUNNIMEDE',
-    '8' => 'ARCANIA',
-    '9' => 'SYNISVANIA',
-   '10' => 'THE SOUTHERN SANDS'
-}
 
 $kingdomNameMap = {
     'AN' => 'Ancient Ones',
@@ -175,147 +154,6 @@ $groupList= nil
 $artifactList = nil
 
 $boldFont = TkFont.new( "weight" => "bold")
-
-#--------------------------------------------------------------------------
-# CLASS: RegionList
-#--------------------------------------------------------------------------
-class RegionList
-   def initialize
-      @list=Hash.new
-      $regionMap.keys.each do |regNum|
-         @list[regNum] = Region.new( regNum,  $regionMap[regNum] )
-      end
-   end
-   def getNumControlled(banner)
-      count = 0
-      @list.keys.each do |regNum|
-         next unless controller = @list[regNum].getLatestController
-         count += 1 if fixBanner(controller[0..1]) == banner
-      end
-      return count
-   end
-   def getRegionByNum(num)
-      if @list[num] == nil 
-         appendTextWithTag("Error: No region number[#{num}]\n",TEXT_TAG_DANGER)
-         return nil
-      end
-      return @list[num]
-   end
-   def gatherStats
-      $popCenterList.getAllLocs.each do |area|
-         pc = $popCenterList.getPopCenter(area)
-         region = pc.getRegion
-         @list[region].addPC( pc.getType, pc.getLastKnownPopulation) unless @list[region] == nil
-      end
-   end
-   def addTurn(turn,num,reaction,controller)
-      if @list[num] == nil 
-         appendTextWithTag("Error: No region number[#{num}]\n",TEXT_TAG_DANGER)
-         return 
-      end
-      @list[num].addTurn(turn,reaction,controller)
-   end
-   def printHeader
-      appendTextWithTag("Region Name                            Cities Towns Villages   Estimated Population  Reaction   Current Controller  \n", TEXT_TAG_HEADING)
-      appendTextWithTag("------ ------------------------------- ------ ----- --------   -------------------- ---------- ---------------------\n", TEXT_TAG_HEADING)
-   end
-   def showAllStats
-      clearText
-      unHighlight
-      appendTextWithTag("Region Statistics\n\n", TEXT_TAG_TITLE)
-      printHeader
-      @list.keys.each do |index|
-         next if index.to_i < 1
-         appendText(@list[index].toString)
-      end
-      showRegionalLeaders
-      tagText($textBox, "FRIENDLY", TEXT_TAG_GOOD)
-      tagText($textBox, "HOSTILE", TEXT_TAG_DANGER)
-   end
-   def saveDataToFile(ofile)
-      @list.each do |area,region|
-            region.saveDataToFile(ofile)
-      end
-   end
-   def getLatestController(num)
-      if @list[num] == nil
-         appendTextWithTag("Error: No region number[#{num}]\n",TEXT_TAG_DANGER)
-         return nil
-      end
-      return @list[num].getLatestController
-   end
-end # class RegionList
-
-#--------------------------------------------------------------------------
-# CLASS: Region
-#--------------------------------------------------------------------------
-class Region
-   def initialize(number,name)
-      @name = name
-      @number = number
-      @estimatedPopulation=0
-      @popCount = Hash.new
-      @popCount[:city]=0
-      @popCount[:town]=0
-      @popCount[:village]=0
-      @turnInfo = Hash.new
-      @turnList = nil
-   end
-   def addPC(type,pop)
-      case type[0]
-         when "C"
-            @popCount[:city] += 1
-         when "T"
-            @popCount[:town] += 1
-         when "V"
-            @popCount[:village] += 1
-      end
-      @estimatedPopulation += pop.to_i
-   end
-   def addTurn(turn,reaction,owner)
-      if @turnInfo[turn] == nil
-         @turnInfo[turn] = Hash.new
-         @turnInfo[turn][:reaction] = reaction
-         @turnInfo[turn][:owner] = owner.strip
-      else
-         appendTextWithTag("WARNING: Region #{@name} already has info for turn #{turn}. Ignoring extra data \n",TEXT_TAG_WARNING) if $debug.to_i == 1
-      end
-   end
-   def getName
-      return @name
-   end
-   def getTurnList
-       if @turnList == nil
-          @turnList = @turnInfo.keys.sort_by(&:to_i)
-       end
-       return @turnList
-   end
-   def getLatestController
-      lastTurn = getTurnList.last
-      return nil if  lastTurn == nil or @turnInfo[lastTurn] == nil
-      return  @turnInfo[lastTurn][:owner]
-   end
-   def getLatestReaction
-      lastTurn = getTurnList.last
-      return nil if  lastTurn == nil or @turnInfo[lastTurn] == nil
-      return  @turnInfo[lastTurn][:reaction]
-   end
-   def toString
-      lastTurn = getTurnList.last
-      line = sprintf("  %2s    %-30s    %2d    %2d      %2d  %21d   %-10s  %s\n",
-              @number, @name, @popCount[:city], @popCount[:town], @popCount[:village], @estimatedPopulation,
-              @turnInfo[lastTurn][:reaction], @turnInfo[lastTurn][:owner] )
-      return line
-   end
-   def saveDataToFile(ofile)
-      getTurnList.each do |turn|
-         r=@turnInfo[turn]
-         record=[turn,"R",'Self',@name,@number,r[:reaction],r[:owner]].join(',')
-         ofile.puts record
-      end
-   end
-
-end # class Region
 
 #--------------------------------------------------------------------------
 # CLASS: AreaList
@@ -617,6 +455,35 @@ class PopCenterList
    def changeOwner(area,owner)
       @list[area].changeOwner(owner)
    end
+
+   def fixRegions
+      appendText("Fixing Regions.\n\n")
+      numUpdated=0
+      @list.each do |area,popCenter|
+         needsFixin=false
+         regNum = popCenter.getRegion
+         newReg = $regionList.getRegionByArea(area)
+         if regNum.nil? or regNum.empty? 
+            appendText("Updating popCenter at #{area} with region #{newReg}.\n")
+            needsFixin=true
+         elsif regNum != newReg
+            # We cheat and use region number "X" to denote a destroyed PC
+            if regNum != "X"
+               appendText("Updating popCenter at #{area} with region #{newReg}. Had been incorrectly set to #{regNum}.\n")
+               needsFixin=true
+            end
+         end
+         if needsFixin
+            numUpdated += 1
+            popCenter.setRegion(newReg)
+            addColoredMapMarker(area, popCenter.getType[0], popCenter.getLastKnownOwner, popCenter.getRegion)
+            highlightTag("box-#{area}",false)
+         end
+      end
+      appendText("\nUpdated #{numUpdated} population centers.\n")
+      appendText("Do not forget to save!\n") if numUpdated > 0
+   end # end fixRegions
+
 end # end class PopCenterList
 
 #--------------------------------------------------------------------------
@@ -741,6 +608,9 @@ class PopCenter
     end
     def getRegion
        return @region
+    end
+    def setRegion(regNum)
+       @region=regNum
     end
     def saveDataToFile(ofile)
       getTurnList.each do |turn|
@@ -1165,12 +1035,6 @@ end
 def getBannerColor(banner)
    color = $kingdomColors[banner]
    color = $kingdomColors['NE'] if color==nil
-   return color
-end
-
-def getColor(x,y)
-   terrainType=$mapSquares[y][x]
-   color = $terrainHash[terrainType]
    return color
 end
 
@@ -2020,6 +1884,11 @@ def setupMenus(root)
                  'command'   => proc { createAddExploredDialog },
                  'underline' => 5)
    
+   map_menu.add('command',
+                 'label'     => "Fix Regions...",
+                 'command'   => proc { fixRegions },
+                 'underline' => 4)
+   
    menu_bar.add('cascade',
                 'menu'  => map_menu,
                 'label' => "Map")
@@ -2028,12 +1897,6 @@ def setupMenus(root)
 end
 
 def drawBox(canvas,x,y,tag)
-#  x1=x * BOX_WIDTH 
-#  x2=x1+ BOX_WIDTH
-#  y1=y * BOX_HEIGHT 
-#  y2=y1+BOX_HEIGHT
-#  color = getColor(x,y)
-#  box = TkcRectangle.new(canvas,x1,y1,x2,y2,'outline' =>BOX_OUTLINE_NORMAL, 'fill' => color, 'tags' => tag )
    bBox = drawABlock(:big, x,y)
    bBox.addtag(I_AM_A_BOX)
    bBox.addtag(tag)
@@ -2364,6 +2227,12 @@ def shiftValues(from,to,highlight)
    end
 end
 
+def fixRegions
+   clearText
+   $regionList.readRegionBorderFile
+   $popCenterList.fixRegions
+end
+
 def markExploredFromLB(lb)
    unHighlight
    areaList = lb.get(0,'end')
@@ -2453,7 +2322,7 @@ def createTextWindow
    #return if $textWindow != nil and $textWindow.exists
    return if TkWinfo.exist?($textWindow)
    $textWindow = TkToplevel.new($root) do
-      title 'Text Output'
+      title "Text Output (v#{VERSION})"
    end
    frame = TkFrame.new($textWindow) do
       relief 'sunken'
@@ -2873,7 +2742,7 @@ end
 #===============================================================================
 begin 
    initVars
-   programName="Alamaze Turn Parser GUI"
+   programName="Alamaze Turn Parser GUI (v#{VERSION})"
    $root = TkRoot.new { title programName }
    bFrame=createMainDisplay($root)
    TkLabel.new(bFrame) do
@@ -2882,7 +2751,7 @@ begin
    end
    setupKingdomBitmaps
    
-   appendTextWithTag("#{programName} Version #{VERSION}\n", TEXT_TAG_TITLE)
+   appendTextWithTag("#{programName}\n", TEXT_TAG_TITLE)
    
    tweakVolume
 

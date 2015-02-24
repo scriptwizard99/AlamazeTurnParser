@@ -32,7 +32,7 @@ require_relative 'alamazeTurnParser'
 
 $debug=0
 
-VERSION="1.1.0"
+VERSION="1.1.1"
 
 BOX_HEIGHT=14
 BOX_WIDTH=BOX_HEIGHT
@@ -1885,7 +1885,7 @@ def setupMenus(root)
                  'underline' => 5)
    
    map_menu.add('command',
-                 'label'     => "Fix Regions...",
+                 'label'     => "Fix Regions",
                  'command'   => proc { fixRegions },
                  'underline' => 4)
    

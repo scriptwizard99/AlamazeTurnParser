@@ -456,6 +456,11 @@ class PopCenterList
       @list[area].changeOwner(owner)
    end
 
+   def destroyPC(area)
+      @list[area].destroyPC
+      $canvas.raise($currentTopTag)
+   end
+
    def fixRegions
       appendText("Fixing Regions.\n\n")
       numUpdated=0
@@ -529,6 +534,17 @@ class PopCenter
       @turnInfo[turn][:source] = "manual"
       @turnInfo[turn][:banner] = owner
       addColoredMapMarker(@area, @type[0], getLastKnownOwner, @region)
+   end
+
+   def destroyPC
+      setRegion("X")
+      changeOwner("XX")
+      turn=$currentTurn
+      @turnInfo[turn][:defense] = 0
+      @turnInfo[turn][:census] = 0
+      @turnInfo[turn][:food] = 0
+      @turnInfo[turn][:gold] = 0
+      @turnInfo[turn][:other] = "DESTROYED"
    end
 
    def toString(turn)
@@ -1774,6 +1790,16 @@ def enterNewOwner(entry, area)
    $canvas.raise($currentTopTag)
 end
 
+def destroyPC(area)
+   pc = $popCenterList.getPopCenter(area)
+   if pc == nil 
+      Tk::messageBox :message => "There is no population center at area  #{area}"
+      return
+   end
+   $popCenterList.destroyPC(area)
+   $canvas.raise($currentTopTag)
+end
+
 def changePCOwner(area)
    pc = $popCenterList.getPopCenter(area)
    if pc == nil 
@@ -1827,6 +1853,10 @@ def rightClickMarker(x,y,area,marker)
       pm.add('command',
              'label'     => "Change PC Owner...",
              'command'   => proc { changePCOwner area}
+             )
+      pm.add('command',
+             'label'     => "Destory PC",
+             'command'   => proc { destroyPC area}
              )
    elsif marker == "#"
       pm.add('command',
@@ -2759,8 +2789,9 @@ begin
    Tk.mainloop
 rescue Exception => e
    File.open("parserGui.err","w+") do |f|
-      f.puts "Problem trying to run GUI."
+      f.puts "Caught Exception."
       f.puts e.inspect
+      f.puts "\nBacktrace:\n"
       f.puts e.backtrace
    end
 end

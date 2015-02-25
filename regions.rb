@@ -23,7 +23,7 @@
 
 $regionMap = {
    '-1' => 'unknown',
-    '0' => 'destroyed',
+    'X' => 'destroyed',
     '1' => 'OAKENDELL',
     '2' => 'THE NORTHERN MISTS',
     '3' => 'THE TALKING MOUNTAINS',

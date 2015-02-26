@@ -134,11 +134,14 @@ class AlamazeTurnParser
      elsif ( string.include? "Regional Summary")
         # This line breaks the rules. I want the info from the header line.
         # Go ahead and parse out @banner
-        puts "[01234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789]"
-        printf("[%s]\n",string)
-        md=string.match(/.*\s+(\w+)\s+Regional Summary/)
-        banner=md[1].upcase
-        #(banner,x,x)=string.split
+        #puts "[01234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789]"
+        #printf("[%s]\n",string)
+        if ( string.include? ">")
+           md=string.match(/>\s+(\w+.*)\s+Regional Summary/)
+           banner=md[1].upcase
+        else
+           (banner,x,x)=string.split
+        end
         @banner=fixBanner(banner[0,2])
         @section = SECTION_REGIONAL_SUMMARY
      else

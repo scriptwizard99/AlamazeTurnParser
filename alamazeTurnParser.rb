@@ -111,15 +111,15 @@ class AlamazeTurnParser
         @section = SECTION_COV_ES_GEN
      elsif ( string.include? "We possess the following artifacts")
         @section = SECTION_ARTIFACTS
-     elsif ( string.include? "*** GROUPS: ***")
+     elsif ( string.upcase.include? "*** GROUPS: ***")
         @section = SECTION_RECON_GROUPS
-     elsif ( string.include? "*** POPULATION CENTERS: ***")
+     elsif ( string.upcase.include? "*** POPULATION CENTERS: ***")
         @section = SECTION_RECON_POP
-     elsif ( string.include? "*** EMISSARIES: ***")
+     elsif ( string.upcase.include? "*** EMISSARIES: ***")
         @section = SECTION_RECON_EMISSARIES
-     elsif ( string.include? "*** ARTIFACTS: ***")
+     elsif ( string.upcase.include? "*** ARTIFACTS: ***")
         @section = SECTION_RECON_ARTIFACTS
-     elsif ( string.include? "IN MEMORIUM")
+     elsif ( string.upcase.include? "IN MEMORIUM")
         @section = SECTION_DEAD_ROYALS
      elsif ( string.include? "Political Events and Status of the Realm")
         @section = SECTION_POLITICAL_EVENTS
@@ -134,18 +134,29 @@ class AlamazeTurnParser
      elsif ( string.include? "Regional Summary")
         # This line breaks the rules. I want the info from the header line.
         # Go ahead and parse out @banner
-        (banner,x,x)=string.split
+        puts "[01234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789]"
+        printf("[%s]\n",string)
+        md=string.match(/.*\s+(\w+)\s+Regional Summary/)
+        banner=md[1].upcase
+        #(banner,x,x)=string.split
         @banner=fixBanner(banner[0,2])
         @section = SECTION_REGIONAL_SUMMARY
      else
         return false
      end
+     #puts "================================================================================"
+     #puts "================================================================================"
+     #puts string
+     #puts @section
+     #puts "================================================================================"
+     #puts "================================================================================"
      return true
   end
 
   # Process a line of text from the turn results
   # based on what section it is from
   def processLine(string)
+     return if string.size < 4
      case @section
      when SECTION_PREAMBLE
         processPreamble(string)
@@ -154,33 +165,33 @@ class AlamazeTurnParser
      when SECTION_FORECAST_PRODUCTION
         collectProduction(string)
      when SECTION_RECON_GROUPS
-        collectMilitaryRecon(string)
+        collectMilitaryRecon(string.upcase)
      when SECTION_RECON_POP
-        collectProductionRecon(string)
+        collectProductionRecon(string.upcase)
      when SECTION_RECON_EMISSARIES
-        collectEmissaryRecon(string)
+        collectEmissaryRecon(string.upcase)
      when SECTION_EMISSARY_LOCATIONS
-        collectEmissaryLocations(string)
+        collectEmissaryLocations(string.upcase)
      when SECTION_MILITARY_MANEUVERS
         collectMilitaryManeuvers(string)
      when SECTION_MILITARY_STATUS
         collectMilitaryStatus(string)
      when SECTION_ARTIFACTS
-        collectArtifactStatus(string)
+        collectArtifactStatus(string.upcase)
      when SECTION_RECON_ARTIFACTS
-        collectArtifactRecon(string)
+        collectArtifactRecon(string.upcase)
      when SECTION_COV_ES_GEN
         collectMattersCovertEsotericAndGeneral(string)
      when SECTION_GROUP_FIND_PC
         collectGroupFindPC(string)
      when SECTION_GROUP_FIND_GROUP
-        collectGroupFindGroup(string)
+        collectGroupFindGroup(string.upcase)
      when SECTION_PC_FIND_GROUP
-        collectPCFindGroup(string)
+        collectPCFindGroup(string.upcase)
      when SECTION_REGION_FIND_GROUP
         collectRegionFindGroup(string)
      when SECTION_REGIONAL_SUMMARY
-        collectRegionalSummary(string)
+        collectRegionalSummary(string.upcase)
      when SECTION_POLITICAL_EVENTS
         collectPoliticalEvents(string)
      when SECTION_DONT_CARE
@@ -242,6 +253,8 @@ class AlamazeTurnParser
   end
 
   def collectRegionalSummary(line)
+     #puts "[01234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789]"
+     #printf("[%s]\n",line)
      return if line.include? "REGION"
      md=line.match(/(.*)\((\d+)\)\s+\w+\s+(\w+)(.*)/)
      regionName=md[1].strip
@@ -265,6 +278,7 @@ class AlamazeTurnParser
      #puts "[01234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789]"
      #printf("[%s]\n",line)
      id = line[36] + fixBanner(line[40..41])
+     @militaryInfo = Hash.new if @militaryInfo == nil
      @militaryInfo[id] = Hash.new if @militaryInfo[id] == nil
      @militaryInfo[id][:banner] = id[1..2]
      @militaryInfo[id][:size] = line[60..70].strip
@@ -279,6 +293,7 @@ class AlamazeTurnParser
      #puts "[01234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789]"
      #printf("[%s]\n",line)
      id = line[49..51]
+     @militaryInfo = Hash.new if @militaryInfo == nil
      @militaryInfo[id] = Hash.new if @militaryInfo[id] == nil
      @militaryInfo[id][:banner] = id[1..2]
      @militaryInfo[id][:size] = line[36..48].strip
@@ -295,6 +310,7 @@ class AlamazeTurnParser
      #puts "[01234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789]"
      #printf("[%s]\n",line)
      id = line[41..43]
+     @militaryInfo = Hash.new if @militaryInfo == nil
      @militaryInfo[id] = Hash.new if @militaryInfo[id] == nil
      @militaryInfo[id][:banner] = id[1..2]
      @militaryInfo[id][:size] = line[55..68].strip
@@ -365,7 +381,7 @@ class AlamazeTurnParser
   def collectArtifactStatus(line)
      return if line.include? "STATUS"
      return if line.include? "POSSESSOR"
-     return if line.include? "Spies"
+     return if line.include? "SPIES"
      #puts "[01234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789]"
      #printf("[%s]\n",line)
      artifact=Hash.new
@@ -494,6 +510,8 @@ class AlamazeTurnParser
   def collectMilitaryRecon(line)
      return if line.include? "BRIGADES OF"
      return if line.include? "RECRUITS"
+     #puts "[01234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789]"
+     #printf("[%s]\n",line)
      (id,brigs,reg,area,rest)=line.split(' ',5)
      if( id.size == 3 )
         @tempGroupInfo = Hash.new
@@ -679,6 +697,18 @@ class AlamazeTurnParser
   # First check to see if we are in a new section of the turn resutls or not.
   # If not, then process the line based on what section we are in.
   def show_text(string, *params)
+    newSection=checkSection(string)
+    processLine(string) if newSection == false
+  end
+
+  def show_html(string)
+    return unless string.ascii_only?
+    string.gsub!('<pre>','')
+    string.gsub!('</pre>','')
+    string.gsub!('<br>','')
+    string.gsub!('<i>','')
+    string.gsub!('</i>','')
+    #string.gsub!('<p.*>(.*)</p>','\1')
     newSection=checkSection(string)
     processLine(string) if newSection == false
   end

@@ -4,6 +4,9 @@
 # vim swap files
 *.swp
 
+# sample data
+/sampleHTML/
+
 # Ruby Stuff
 *.gem
 *.rbc

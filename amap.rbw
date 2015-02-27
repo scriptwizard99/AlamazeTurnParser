@@ -1571,7 +1571,7 @@ def openDocument
   end
 end
 
-def runParser(filename)
+def runParser(filename,format=AlamazeTurnParser::FORMAT_HTML)
    clearText
    tempFile = "ofile.dat"
    File.delete(tempFile) if File.exists?(tempFile)
@@ -1584,14 +1584,22 @@ def runParser(filename)
       return
    end
 
-   receiver = AlamazeTurnParser.new
-   pdf = PDF::Reader.file(filename,receiver)
-   receiver.showInfoRecord(ofile)
-   receiver.showPopInfo(ofile)
-   receiver.showEmissaryInfo(ofile)
-   receiver.showArmies(ofile)
-   receiver.showArtifactInfo(ofile)
-   receiver.showRegionalInfo(ofile)
+   parser = AlamazeTurnParser.new
+   if( format == AlamazeTurnParser::FORMAT_PDF) 
+      appendText("Processing PDF file\n")
+      pdf = PDF::Reader.file(filename,parser)
+   else
+      appendText("Processing HTML file\n")
+      IO.foreach(filename) do |line|
+         parser.show_html(line)
+      end
+   end
+   parser.showInfoRecord(ofile)
+   parser.showPopInfo(ofile)
+   parser.showEmissaryInfo(ofile)
+   parser.showArmies(ofile)
+   parser.showArtifactInfo(ofile)
+   parser.showRegionalInfo(ofile)
    ofile.close
 
 
@@ -1599,11 +1607,18 @@ def runParser(filename)
 end
 
 def parseTurn
-  filetypes = [ ["Alamaze Turn Results", "*.PDF"],["All Files", "*"] ]
+  filetypes = [ ["Alamaze Turn Results", "*.PDF *.html"],["All Files", "*"] ]
   filename = Tk.getOpenFile('filetypes' => filetypes,
                             'parent' => $root )
+
+  if filename.upcase.include? "PDF" 
+     format = AlamazeTurnParser::FORMAT_PDF
+  else
+     format = AlamazeTurnParser::FORMAT_HTML
+  end
+
   if filename != ""
-    runParser(filename)
+    runParser(filename,format)
   end
 end
 

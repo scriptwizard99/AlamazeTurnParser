@@ -25,6 +25,9 @@ require 'pdf/reader'
 
 class AlamazeTurnParser
 
+  FORMAT_PDF=1
+  FORMAT_HTML=2
+
   # define the sections of the turn results
   SECTION_DONT_CARE=0
   SECTION_PREAMBLE=1

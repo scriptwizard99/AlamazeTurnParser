@@ -1573,38 +1573,45 @@ end
 
 def runParser(filename,format=AlamazeTurnParser::FORMAT_HTML)
    clearText
-   tempFile = "ofile.dat"
-   File.delete(tempFile) if File.exists?(tempFile)
-   #cmd="ruby parse1.rb #{filename} > #{tempFile}"
-   appendText("Attempting to parse #{filename}\n")
-
-   ofile = File.new(tempFile, File::CREAT|File::TRUNC|File::RDWR)
-   if ofile == nil or File.writable?(tempFile) == false
-      appendTextWithTag("Failure opening #{tempFile} for writing. Parsing FAILED!\n", TEXT_TAG_DANGER)
-      return
-   end
-
-   parser = AlamazeTurnParser.new
-   if( format == AlamazeTurnParser::FORMAT_PDF) 
-      appendText("Processing PDF file\n")
-      pdf = PDF::Reader.file(filename,parser)
-   else
-      appendText("Processing HTML file\n")
-      IO.foreach(filename) do |line|
-         parser.show_html(line)
+   begin
+      tempFile = "ofile.dat"
+      File.delete(tempFile) if File.exists?(tempFile)
+      #cmd="ruby parse1.rb #{filename} > #{tempFile}"
+      appendText("Attempting to parse #{filename}\n")
+   
+      ofile = File.new(tempFile, File::CREAT|File::TRUNC|File::RDWR)
+      if ofile == nil or File.writable?(tempFile) == false
+         appendTextWithTag("Failure opening #{tempFile} for writing. Parsing FAILED!\n", TEXT_TAG_DANGER)
+         return
       end
-   end
-   parser.showInfoRecord(ofile)
-   parser.showPopInfo(ofile)
-   parser.showEmissaryInfo(ofile)
-   parser.showArmies(ofile)
-   parser.showArtifactInfo(ofile)
-   parser.showRegionalInfo(ofile)
-   ofile.close
+   
+      parser = AlamazeTurnParser.new
+      if( format == AlamazeTurnParser::FORMAT_PDF) 
+         appendText("Processing PDF file\n")
+         pdf = PDF::Reader.file(filename,parser)
+      else
+         appendText("Processing HTML file\n")
+         IO.foreach(filename) do |line|
+            parser.show_html(line)
+         end
+      end
+      parser.showInfoRecord(ofile)
+      parser.showPopInfo(ofile)
+      parser.showEmissaryInfo(ofile)
+      parser.showArmies(ofile)
+      parser.showArtifactInfo(ofile)
+      parser.showRegionalInfo(ofile)
+      ofile.close
+   rescue Exception => e
+         appendText("Caught Exception.\n")
+         appendText("#{e.inspect}.\n")
+         appendText("\nBacktrace:.\n")
+         appendText("#{e.backtrace}.\n")
+   end # end rescue
 
 
    loadDocument(tempFile)
-end
+end # end runParser
 
 def parseTurn
   filetypes = [ ["Alamaze Turn Results", "*.PDF *.html"],["All Files", "*"] ]

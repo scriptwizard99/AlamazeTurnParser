@@ -49,6 +49,8 @@ class AlamazeTurnParser
   SECTION_REGIONAL_SUMMARY=17
   SECTION_POLITICAL_EVENTS=18
   SECTION_MILITARY_MANEUVERS=19
+  SECTION_EYES_ONLY=20
+  SECTION_VICTORY_CONDITIONS=21
 
   @section=0
   @banner="xxxxxxx"
@@ -138,6 +140,10 @@ class AlamazeTurnParser
         @section = SECTION_MILITARY_MANEUVERS
      elsif ( string.include? "Military Group Status")
         @section = SECTION_MILITARY_STATUS
+     elsif ( string.include? "Additional intelligence for your eyes only")
+        @section = SECTION_EYES_ONLY
+     elsif ( string.include? "victory conditions")
+        @section = SECTION_VICTORY_CONDITIONS
      elsif ( string.include? "Regional Summary")
         # This line breaks the rules. I want the info from the header line.
         # Go ahead and parse out @banner
@@ -183,15 +189,15 @@ class AlamazeTurnParser
      when SECTION_EMISSARY_LOCATIONS
         collectEmissaryLocations(string.upcase)
      when SECTION_MILITARY_MANEUVERS
-        collectMilitaryManeuvers(string)
+        collectMilitaryManeuvers(string.upcase)
      when SECTION_MILITARY_STATUS
-        collectMilitaryStatus(string)
+        collectMilitaryStatus(string.upcase)
      when SECTION_ARTIFACTS
         collectArtifactStatus(string.upcase)
      when SECTION_RECON_ARTIFACTS
         collectArtifactRecon(string.upcase)
      when SECTION_COV_ES_GEN
-        collectMattersCovertEsotericAndGeneral(string)
+        collectMattersCovertEsotericAndGeneral(string.upcase)
      when SECTION_GROUP_FIND_PC
         collectGroupFindPC(string.upcase)
      when SECTION_GROUP_FIND_GROUP
@@ -203,7 +209,7 @@ class AlamazeTurnParser
      when SECTION_REGIONAL_SUMMARY
         collectRegionalSummary(string.upcase)
      when SECTION_POLITICAL_EVENTS
-        collectPoliticalEvents(string)
+        collectPoliticalEvents(string.upcase)
      when SECTION_DONT_CARE
         # do nothing
      else
@@ -224,14 +230,24 @@ class AlamazeTurnParser
 
 #[01234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789]
 #[     NIMBUS SIGN               (AREA MN), A HIGH RANKING EMISSARY OF THE WARLOCK KINGDOM HAS RELOCATED HERE.                                ]
+#[     LUJKA             A HIGH RANKING EMISSARY OF THE DRUID KINGDOM HAS RELOCATED HERE (AREA RF).                      html
   def collectPoliticalEvents(line)
      if line.include? "HAS RELOCATED HERE"
         #puts "[01234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789]"
         #printf("[%s]\n",line)
-        md=line.match(/.*\(AREA (\w+).*OF THE (\w+)/)
-        #print md
-        area=md[1]
-        banner=fixBanner(md[2][0..1])
+
+        if md=line.match(/.*\(AREA (\w+).*OF THE (\w+)/)
+           #print md
+           area=md[1]
+           banner=fixBanner(md[2][0..1])
+        elsif md=line.match(/.*OF THE (\w+).*\(AREA (\w+)/)
+           area=md[2]
+           banner=fixBanner(md[1][0..1])
+        else
+           puts "ERROR: Cannot parse line\n"
+           printf("[%s]\n",line)
+        end
+
         name="#{@turnNumber}#{area}#{banner}-Unknown"
         #printf("\n\narea=%s banner=%s name=%s\n", area, banner,name)
         @emissaryInfo=Hash.new if @emissaryInfo == nil
@@ -329,8 +345,8 @@ class AlamazeTurnParser
 #[          ARCANIA             TO       3PA           BRIGADE          GENERAL DRAKE                                html
   def collectGroupFindGroup(line)
      return if line.include? "REGION"
-     puts "[01234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789]"
-     printf("[%s]\n",line)
+     #puts "[01234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789]"
+     #printf("[%s]\n",line)
      id = line[39..43].strip
      @militaryInfo = Hash.new if @militaryInfo == nil
      @militaryInfo[id] = Hash.new if @militaryInfo[id] == nil
@@ -444,7 +460,7 @@ class AlamazeTurnParser
   def collectArtifactRecon(line)
      return if line.include? "POSSESSOR"
      return if line.include? "MEMORIUM"
-     return if line.include? "RESULT:"
+     return if line.include? "RESULT"
      return if line.include? "NOTHING TO REPORT"
      return if line.include? "RAVEN FAMILIAR"
      #puts "[01234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789]"
@@ -615,6 +631,8 @@ class AlamazeTurnParser
   #
   def collectMilitaryStatus(line)
      return if line.include? "XXXX"
+     #puts "[01234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789]"
+     #printf("[%s]\n",line)
      if( line.include? "GROUP:" )
         (x,num,kingdom)=line.split
         groupID="#{num[0]}#{kingdom[0,2]}"
@@ -706,7 +724,7 @@ class AlamazeTurnParser
      return if rank.empty?
      name = line[20,22].strip
      (x,kingdom,x,x3,area,x4)=line[43..line.size].split
-     @banner=fixBanner(kingdom[0,2]) if rank == "KING" or rank == "REGENT"
+     @banner=fixBanner(kingdom[0,2]) if rank == "KING" or rank == "REGENT" or rank == "QUEEN"
      if rank == "CONSUL"
         #@banner="AN" if line.match(/ANCIENT ONES/)
         @banner="AN" 
@@ -815,6 +833,7 @@ class AlamazeTurnParser
   # Just print out the information stored in the army group hash
   # Fields are separated by commas (CSV)
   def showArmies(ofile=$stdout)
+     return if !defined? @militaryInfo
      ofile.printf("Turn,Record Type,Data Source,Map Location,Kingdom,Name,Region,size,archers,food,horse,leader1,leader2,leader3,wizard1,wizard2,wizard3\n")
      @militaryInfo.keys.sort.each {|id|
         m=@militaryInfo[id]

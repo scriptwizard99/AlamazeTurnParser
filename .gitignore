@@ -4,6 +4,11 @@
 # vim swap files
 *.swp
 
+# logs and such
+*.log
+*.err
+*.out
+
 # sample data
 /sampleHTML/
 

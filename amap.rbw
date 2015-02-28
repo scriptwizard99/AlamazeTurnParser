@@ -2804,6 +2804,11 @@ begin
    setupKingdomBitmaps
    
    appendTextWithTag("#{programName}\n", TEXT_TAG_TITLE)
+
+   if defined? ENV['OCRA_EXECUTABLE']
+      appendText("OCRA_EXECUTABLE=[#{ENV['OCRA_EXECUTABLE']}]\n")
+   end
+   appendText("$0=[#{$0}]\n")
    
    tweakVolume
 

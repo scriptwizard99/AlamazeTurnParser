@@ -61,6 +61,7 @@ class EmmyTool
 
    $rankMap = {
       'PRI' => RANK_PRINCE,
+      'DEM' => RANK_PRINCE,
       'DUK' => RANK_DUKE,
       'DUC' => RANK_DUKE,
       'COU' => RANK_COUNT,

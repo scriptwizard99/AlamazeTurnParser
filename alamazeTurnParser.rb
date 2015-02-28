@@ -270,11 +270,13 @@ class AlamazeTurnParser
      if md=line.match(/IT IS BELIEVED THE (\S+) (\S+) NAMED (.+) WAS/)
         name=md[3]
         @emissaryInfo=Hash.new if @emissaryInfo == nil
-        @emissaryInfo[name]=Hash.new if @emissaryInfo[name] == nil
-        @emissaryInfo[name]['banner']=fixBanner(md[1][0..1])
-        @emissaryInfo[name]['rank']=md[2]
-        @emissaryInfo[name]['area']=@politicalTempArea
-        @emissaryInfo[name]['source']="Political"
+        if @emissaryInfo[name] == nil
+           @emissaryInfo[name]=Hash.new 
+           @emissaryInfo[name]['banner']=fixBanner(md[1][0..1])
+           @emissaryInfo[name]['rank']=md[2]
+           @emissaryInfo[name]['area']=@politicalTempArea
+           @emissaryInfo[name]['source']="Political"
+        end
      end
   end
 
@@ -314,11 +316,13 @@ class AlamazeTurnParser
      end
 
      @militaryInfo = Hash.new if @militaryInfo == nil
-     @militaryInfo[id] = Hash.new if @militaryInfo[id] == nil
-     @militaryInfo[id][:size] = size
-     @militaryInfo[id][:region] = line[10..31].strip
-     @militaryInfo[id][:banner] = id[1..2]
-     @militaryInfo[id][:source] = "Encounter"
+     if @militaryInfo[id] == nil
+        @militaryInfo[id] = Hash.new 
+        @militaryInfo[id][:size] = size
+        @militaryInfo[id][:region] = line[10..31].strip
+        @militaryInfo[id][:banner] = id[1..2]
+        @militaryInfo[id][:source] = "Encounter"
+     end
   end
 #           1         2         3         4         5         6         7         8         9         0
 #[01234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789]
@@ -331,12 +335,14 @@ class AlamazeTurnParser
      #printf("[%s]\n",line)
      id = line[49..54].strip
      @militaryInfo = Hash.new if @militaryInfo == nil
-     @militaryInfo[id] = Hash.new if @militaryInfo[id] == nil
-     @militaryInfo[id][:banner] = id[1..2]
-     @militaryInfo[id][:size] = line[36..48].strip
-     @militaryInfo[id][:area] = line[30..31]
-     @militaryInfo[id][:leader1] = line[63..92].strip
-     @militaryInfo[id][:source] = "Encounter"
+     if @militaryInfo[id] == nil
+        @militaryInfo[id] = Hash.new 
+        @militaryInfo[id][:banner] = id[1..2]
+        @militaryInfo[id][:size] = line[36..48].strip
+        @militaryInfo[id][:area] = line[30..31]
+        @militaryInfo[id][:leader1] = line[63..92].strip
+        @militaryInfo[id][:source] = "Encounter"
+     end
   end
 #           1         2         3         4         5         6         7         8         9         0
 #[01234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789]
@@ -349,13 +355,14 @@ class AlamazeTurnParser
      #printf("[%s]\n",line)
      id = line[39..43].strip
      @militaryInfo = Hash.new if @militaryInfo == nil
-     @militaryInfo[id] = Hash.new if @militaryInfo[id] == nil
-
-     @militaryInfo[id][:banner] = id[1..2]
-     @militaryInfo[id][:size] = line[53..68].strip
-     @militaryInfo[id][:area] = line[30..34].strip
-     @militaryInfo[id][:leader1] = line[70..92].strip
-     @militaryInfo[id][:source] = "Encounter"
+     if @militaryInfo[id] == nil
+        @militaryInfo[id] = Hash.new 
+        @militaryInfo[id][:banner] = id[1..2]
+        @militaryInfo[id][:size] = line[53..68].strip
+        @militaryInfo[id][:area] = line[30..34].strip
+        @militaryInfo[id][:leader1] = line[70..92].strip
+        @militaryInfo[id][:source] = "Encounter"
+     end
   end
 #           1         2         3         4         5         6         7         8         9         0
 #[01234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789]
@@ -371,24 +378,28 @@ class AlamazeTurnParser
 
      if @format == FORMAT_PDF
         area = line[27..28]
-        @popCenterInfo[area]=Hash.new if @popCenterInfo[area] == nil
-        #@popCenterInfo[area]['region']=""
-        @popCenterInfo[area]['banner']=fixBanner(line[32..33])
-        @popCenterInfo[area]['name']=line[57..78].strip
-        @popCenterInfo[area]['type']=line[48..56].strip
-        @popCenterInfo[area]['defense']=line[77..85].strip
-        @popCenterInfo[area]['source']="Encounter"
+        if @popCenterInfo[area] == nil
+           @popCenterInfo[area]=Hash.new 
+           #@popCenterInfo[area]['region']=""
+           @popCenterInfo[area]['banner']=fixBanner(line[32..33])
+           @popCenterInfo[area]['name']=line[57..78].strip
+           @popCenterInfo[area]['type']=line[48..56].strip
+           @popCenterInfo[area]['defense']=line[77..85].strip
+           @popCenterInfo[area]['source']="Encounter"
+        end
      else
         line.gsub!(',','')
         area = line[30..31]
-        @popCenterInfo[area]=Hash.new if @popCenterInfo[area] == nil
-        #@popCenterInfo[area]['region']=""
-        @popCenterInfo[area]['banner']=fixBanner(line[36..37])
-        @popCenterInfo[area]['name']=line[61..73].strip
-        @popCenterInfo[area]['type']=line[52..60].strip
-        @popCenterInfo[area]['defense']=line[77..85].strip
-        @popCenterInfo[area]['source']="Encounter"
-        #puts "area=#{area} #{@popCenterInfo[area]}"
+        if @popCenterInfo[area] == nil
+           @popCenterInfo[area]=Hash.new 
+           #@popCenterInfo[area]['region']=""
+           @popCenterInfo[area]['banner']=fixBanner(line[36..37])
+           @popCenterInfo[area]['name']=line[61..73].strip
+           @popCenterInfo[area]['type']=line[52..60].strip
+           @popCenterInfo[area]['defense']=line[77..85].strip
+           @popCenterInfo[area]['source']="Encounter"
+           #puts "area=#{area} #{@popCenterInfo[area]}"
+        end
      end
   end
 
@@ -405,18 +416,22 @@ class AlamazeTurnParser
      if md = line.match(/THERE IS A (\S+) LOCATED IN AREA (\w\w)/)
         area = md[2]
         @popCenterInfo=Hash.new if @popCenterInfo == nil
-        @popCenterInfo[area]=Hash.new if @popCenterInfo[area] == nil
-        @popCenterInfo[area]['type']=md[1]
-        @popCenterInfo[area]['source']="Divined"
+        if @popCenterInfo[area] == nil
+           @popCenterInfo[area]=Hash.new 
+           @popCenterInfo[area]['type']=md[1]
+           @popCenterInfo[area]['source']="Divined"
+        end
      end
      if md = line.match(/THERE IS A (\S+).* (\S+) LOCATED IN AREA (\w\w)/)
         #p md
         area = md[3]
         @popCenterInfo=Hash.new if @popCenterInfo == nil
-        @popCenterInfo[area]=Hash.new if @popCenterInfo[area] == nil
-        @popCenterInfo[area]['banner']=fixBanner(md[1][0..1])
-        @popCenterInfo[area]['type']=md[2]
-        @popCenterInfo[area]['source']="Divined"
+        if @popCenterInfo[area] == nil
+           @popCenterInfo[area]=Hash.new 
+           @popCenterInfo[area]['banner']=fixBanner(md[1][0..1])
+           @popCenterInfo[area]['type']=md[2]
+           @popCenterInfo[area]['source']="Divined"
+        end
      end
   
   end 
@@ -505,9 +520,11 @@ class AlamazeTurnParser
         if md=part.match(/.* A (.*) AT (\w\w)/)
            area=md[2]
            @popCenterInfo=Hash.new if @popCenterInfo == nil
-           @popCenterInfo[area]=Hash.new if @popCenterInfo[area] == nil
-           @popCenterInfo[area]['type']=md[1]
-           @popCenterInfo[area]['source']="Passed"
+           if @popCenterInfo[area] == nil
+              @popCenterInfo[area]=Hash.new 
+              @popCenterInfo[area]['type']=md[1]
+              @popCenterInfo[area]['source']="Passed"
+           end
         end
      end
   end
@@ -778,11 +795,13 @@ class AlamazeTurnParser
      end
 
      @emissaryInfo=Hash.new if @emissaryInfo == nil
-     @emissaryInfo[name]=Hash.new if @emissaryInfo[name] == nil
-     @emissaryInfo[name]['banner']=banner
-     @emissaryInfo[name]['rank']=rank
-     @emissaryInfo[name]['area']=area
-     @emissaryInfo[name]['source']="Recon"
+     if @emissaryInfo[name] == nil
+        @emissaryInfo[name]=Hash.new 
+        @emissaryInfo[name]['banner']=banner
+        @emissaryInfo[name]['rank']=rank
+        @emissaryInfo[name]['area']=area
+        @emissaryInfo[name]['source']="Recon"
+     end
   end
 
   # Callback for PDF processing thingy

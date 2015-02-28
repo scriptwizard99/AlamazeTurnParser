@@ -25,6 +25,9 @@ require 'pdf/reader'
 
 class AlamazeTurnParser
 
+  FORMAT_PDF=1
+  FORMAT_HTML=2
+
   # define the sections of the turn results
   SECTION_DONT_CARE=0
   SECTION_PREAMBLE=1
@@ -46,6 +49,8 @@ class AlamazeTurnParser
   SECTION_REGIONAL_SUMMARY=17
   SECTION_POLITICAL_EVENTS=18
   SECTION_MILITARY_MANEUVERS=19
+  SECTION_EYES_ONLY=20
+  SECTION_VICTORY_CONDITIONS=21
 
   @section=0
   @banner="xxxxxxx"
@@ -69,6 +74,10 @@ class AlamazeTurnParser
      else
         return banner
      end
+  end
+
+  def setFormat(format)
+     @format = format
   end
 
   # Determine what section of the turn results we are in
@@ -111,15 +120,15 @@ class AlamazeTurnParser
         @section = SECTION_COV_ES_GEN
      elsif ( string.include? "We possess the following artifacts")
         @section = SECTION_ARTIFACTS
-     elsif ( string.include? "*** GROUPS: ***")
+     elsif ( string.upcase.include? "*** GROUPS: ***")
         @section = SECTION_RECON_GROUPS
-     elsif ( string.include? "*** POPULATION CENTERS: ***")
+     elsif ( string.upcase.include? "*** POPULATION CENTERS: ***")
         @section = SECTION_RECON_POP
-     elsif ( string.include? "*** EMISSARIES: ***")
+     elsif ( string.upcase.include? "*** EMISSARIES: ***")
         @section = SECTION_RECON_EMISSARIES
-     elsif ( string.include? "*** ARTIFACTS: ***")
+     elsif ( string.upcase.include? "*** ARTIFACTS: ***")
         @section = SECTION_RECON_ARTIFACTS
-     elsif ( string.include? "IN MEMORIUM")
+     elsif ( string.upcase.include? "IN MEMORIUM")
         @section = SECTION_DEAD_ROYALS
      elsif ( string.include? "Political Events and Status of the Realm")
         @section = SECTION_POLITICAL_EVENTS
@@ -131,58 +140,76 @@ class AlamazeTurnParser
         @section = SECTION_MILITARY_MANEUVERS
      elsif ( string.include? "Military Group Status")
         @section = SECTION_MILITARY_STATUS
+     elsif ( string.include? "Additional intelligence for your eyes only")
+        @section = SECTION_EYES_ONLY
+     elsif ( string.include? "victory conditions")
+        @section = SECTION_VICTORY_CONDITIONS
      elsif ( string.include? "Regional Summary")
         # This line breaks the rules. I want the info from the header line.
         # Go ahead and parse out @banner
-        (banner,x,x)=string.split
+        #puts "[01234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789]"
+        #printf("[%s]\n",string)
+        if ( string.include? ">")
+           md=string.match(/>\s+(\w+.*)\s+Regional Summary/)
+           banner=md[1].upcase
+        else
+           (banner,x,x)=string.split
+        end
         @banner=fixBanner(banner[0,2])
         @section = SECTION_REGIONAL_SUMMARY
      else
         return false
      end
+     #puts "================================================================================"
+     #puts "================================================================================"
+     #puts string
+     #puts @section
+     #puts "================================================================================"
+     #puts "================================================================================"
      return true
   end
 
   # Process a line of text from the turn results
   # based on what section it is from
   def processLine(string)
+     return if string.size < 4
      case @section
      when SECTION_PREAMBLE
         processPreamble(string)
      when SECTION_CUR_PRODUCTION
-        collectProduction(string)
+        collectProduction(string.upcase)
      when SECTION_FORECAST_PRODUCTION
-        collectProduction(string)
+        collectProduction(string.upcase)
      when SECTION_RECON_GROUPS
-        collectMilitaryRecon(string)
+        collectMilitaryRecon(string.upcase)
      when SECTION_RECON_POP
-        collectProductionRecon(string)
+        collectProductionRecon(string.upcase)
      when SECTION_RECON_EMISSARIES
-        collectEmissaryRecon(string)
+        collectEmissaryRecon(string.upcase)
      when SECTION_EMISSARY_LOCATIONS
-        collectEmissaryLocations(string)
+        collectEmissaryLocations(string.upcase)
      when SECTION_MILITARY_MANEUVERS
-        collectMilitaryManeuvers(string)
+        collectMilitaryManeuvers(string.upcase)
      when SECTION_MILITARY_STATUS
-        collectMilitaryStatus(string)
+        collectMilitaryStatus(string.upcase)
      when SECTION_ARTIFACTS
-        collectArtifactStatus(string)
+        collectArtifactStatus(string.upcase)
      when SECTION_RECON_ARTIFACTS
-        collectArtifactRecon(string)
+        collectArtifactRecon(string.upcase)
      when SECTION_COV_ES_GEN
-        collectMattersCovertEsotericAndGeneral(string)
+        collectMattersCovertEsotericAndGeneral(string.upcase)
      when SECTION_GROUP_FIND_PC
-        collectGroupFindPC(string)
+        collectGroupFindPC(string.upcase)
      when SECTION_GROUP_FIND_GROUP
-        collectGroupFindGroup(string)
+        collectGroupFindGroup(string.upcase)
      when SECTION_PC_FIND_GROUP
-        collectPCFindGroup(string)
+        collectPCFindGroup(string.upcase)
      when SECTION_REGION_FIND_GROUP
-        collectRegionFindGroup(string)
+        collectRegionFindGroup(string.upcase)
      when SECTION_REGIONAL_SUMMARY
-        collectRegionalSummary(string)
+        collectRegionalSummary(string.upcase)
      when SECTION_POLITICAL_EVENTS
-        collectPoliticalEvents(string)
+        collectPoliticalEvents(string.upcase)
      when SECTION_DONT_CARE
         # do nothing
      else
@@ -203,14 +230,24 @@ class AlamazeTurnParser
 
 #[01234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789]
 #[     NIMBUS SIGN               (AREA MN), A HIGH RANKING EMISSARY OF THE WARLOCK KINGDOM HAS RELOCATED HERE.                                ]
+#[     LUJKA             A HIGH RANKING EMISSARY OF THE DRUID KINGDOM HAS RELOCATED HERE (AREA RF).                      html
   def collectPoliticalEvents(line)
      if line.include? "HAS RELOCATED HERE"
         #puts "[01234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789]"
         #printf("[%s]\n",line)
-        md=line.match(/.*\(AREA (\w+).*OF THE (\w+)/)
-        #print md
-        area=md[1]
-        banner=fixBanner(md[2][0..1])
+
+        if md=line.match(/.*\(AREA (\w+).*OF THE (\w+)/)
+           #print md
+           area=md[1]
+           banner=fixBanner(md[2][0..1])
+        elsif md=line.match(/.*OF THE (\w+).*\(AREA (\w+)/)
+           area=md[2]
+           banner=fixBanner(md[1][0..1])
+        else
+           puts "ERROR: Cannot parse line\n"
+           printf("[%s]\n",line)
+        end
+
         name="#{@turnNumber}#{area}#{banner}-Unknown"
         #printf("\n\narea=%s banner=%s name=%s\n", area, banner,name)
         @emissaryInfo=Hash.new if @emissaryInfo == nil
@@ -233,15 +270,19 @@ class AlamazeTurnParser
      if md=line.match(/IT IS BELIEVED THE (\S+) (\S+) NAMED (.+) WAS/)
         name=md[3]
         @emissaryInfo=Hash.new if @emissaryInfo == nil
-        @emissaryInfo[name]=Hash.new if @emissaryInfo[name] == nil
-        @emissaryInfo[name]['banner']=fixBanner(md[1][0..1])
-        @emissaryInfo[name]['rank']=md[2]
-        @emissaryInfo[name]['area']=@politicalTempArea
-        @emissaryInfo[name]['source']="Political"
+        if @emissaryInfo[name] == nil
+           @emissaryInfo[name]=Hash.new 
+           @emissaryInfo[name]['banner']=fixBanner(md[1][0..1])
+           @emissaryInfo[name]['rank']=md[2]
+           @emissaryInfo[name]['area']=@politicalTempArea
+           @emissaryInfo[name]['source']="Political"
+        end
      end
   end
 
   def collectRegionalSummary(line)
+     #puts "[01234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789]"
+     #printf("[%s]\n",line)
      return if line.include? "REGION"
      md=line.match(/(.*)\((\d+)\)\s+\w+\s+(\w+)(.*)/)
      regionName=md[1].strip
@@ -258,67 +299,108 @@ class AlamazeTurnParser
 #           1         2         3         4         5         6         7         8         9         0
 #[01234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789]
 #[          ARCANIA                   2ND GIANT               ARMY      ]
+#[          Arcania                1st Paladin             Army Group
   def collectRegionFindGroup(line)
      return if line.include? "REGION"
-     return if line.include? "military"
-     return if line.include? "Economic"
+     return if line.include? "MILITARY"
+     return if line.include? "ECONOMIC"
      #puts "[01234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789]"
      #printf("[%s]\n",line)
-     id = line[36] + fixBanner(line[40..41])
-     @militaryInfo[id] = Hash.new if @militaryInfo[id] == nil
-     @militaryInfo[id][:banner] = id[1..2]
-     @militaryInfo[id][:size] = line[60..70].strip
-     @militaryInfo[id][:region] = line[10..31]
-     @militaryInfo[id][:source] = "Encounter"
+
+     if @format == FORMAT_PDF
+        id = line[36] + fixBanner(line[40..41])
+        size = line[60..70].strip
+     else
+        id = line[33] + fixBanner(line[37..38])
+        size = line[57..70].strip
+     end
+
+     @militaryInfo = Hash.new if @militaryInfo == nil
+     if @militaryInfo[id] == nil
+        @militaryInfo[id] = Hash.new 
+        @militaryInfo[id][:size] = size
+        @militaryInfo[id][:region] = line[10..31].strip
+        @militaryInfo[id][:banner] = id[1..2]
+        @militaryInfo[id][:source] = "Encounter"
+     end
   end
 #           1         2         3         4         5         6         7         8         9         0
 #[01234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789]
 #[          WYRMWOOD            MO    ARMY         2GI           MARSHAL I  IKAVAN      ]
+#[          RUIN                AY     PATROL        3DW          CAPTAIN II GOEFFRY
+
   def collectPCFindGroup(line)
      return if line.include? "PC NAME"
      #puts "[01234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789]"
      #printf("[%s]\n",line)
-     id = line[49..51]
-     @militaryInfo[id] = Hash.new if @militaryInfo[id] == nil
-     @militaryInfo[id][:banner] = id[1..2]
-     @militaryInfo[id][:size] = line[36..48].strip
-     @militaryInfo[id][:area] = line[30..31]
-     @militaryInfo[id][:leader1] = line[63..92].strip
-     @militaryInfo[id][:source] = "Encounter"
+     id = line[49..54].strip
+     @militaryInfo = Hash.new if @militaryInfo == nil
+     if @militaryInfo[id] == nil
+        @militaryInfo[id] = Hash.new 
+        @militaryInfo[id][:banner] = id[1..2]
+        @militaryInfo[id][:size] = line[36..48].strip
+        @militaryInfo[id][:area] = line[30..31]
+        @militaryInfo[id][:leader1] = line[63..92].strip
+        @militaryInfo[id][:source] = "Encounter"
+     end
   end
 #           1         2         3         4         5         6         7         8         9         0
 #[01234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789]
 #[          AMBERLAND              NK      1UN           BRIGADE        MARSHAL I  BLACK       ]
 #[          THE SOUTHERN SANDS     XV      1RA           {MASKED}       UNKNOWN]
+#[          ARCANIA             TO       3PA           BRIGADE          GENERAL DRAKE                                html
   def collectGroupFindGroup(line)
      return if line.include? "REGION"
      #puts "[01234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789]"
      #printf("[%s]\n",line)
-     id = line[41..43]
-     @militaryInfo[id] = Hash.new if @militaryInfo[id] == nil
-     @militaryInfo[id][:banner] = id[1..2]
-     @militaryInfo[id][:size] = line[55..68].strip
-     @militaryInfo[id][:area] = line[33..34]
-     @militaryInfo[id][:leader1] = line[70..92].strip
-     @militaryInfo[id][:source] = "Encounter"
+     id = line[39..43].strip
+     @militaryInfo = Hash.new if @militaryInfo == nil
+     if @militaryInfo[id] == nil
+        @militaryInfo[id] = Hash.new 
+        @militaryInfo[id][:banner] = id[1..2]
+        @militaryInfo[id][:size] = line[53..68].strip
+        @militaryInfo[id][:area] = line[30..34].strip
+        @militaryInfo[id][:leader1] = line[70..92].strip
+        @militaryInfo[id][:source] = "Encounter"
+     end
   end
 #           1         2         3         4         5         6         7         8         9         0
 #[01234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789]
 #[          AMBERLAND        NK   WARLOCK         CITY     AVALON                19872]
+#[          TALKING MOUNTAINS   AY    DWARVEN         TOWN     RUIN             124,005
+
   def collectGroupFindPC(line)
      return if line.include? "REGION"
      #puts "[01234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789]"
      #printf("[%s]\n",line)
-     area = line[27..28]
 
      @popCenterInfo=Hash.new if @popCenterInfo == nil
-     @popCenterInfo[area]=Hash.new if @popCenterInfo[area] == nil
-     #@popCenterInfo[area]['region']=""
-     @popCenterInfo[area]['banner']=fixBanner(line[32..33])
-     @popCenterInfo[area]['name']=line[57..78].strip
-     @popCenterInfo[area]['type']=line[48..56].strip
-     @popCenterInfo[area]['defense']=line[77..85].strip
-     @popCenterInfo[area]['source']="Encounter"
+
+     if @format == FORMAT_PDF
+        area = line[27..28]
+        if @popCenterInfo[area] == nil
+           @popCenterInfo[area]=Hash.new 
+           #@popCenterInfo[area]['region']=""
+           @popCenterInfo[area]['banner']=fixBanner(line[32..33])
+           @popCenterInfo[area]['name']=line[57..78].strip
+           @popCenterInfo[area]['type']=line[48..56].strip
+           @popCenterInfo[area]['defense']=line[77..85].strip
+           @popCenterInfo[area]['source']="Encounter"
+        end
+     else
+        line.gsub!(',','')
+        area = line[30..31]
+        if @popCenterInfo[area] == nil
+           @popCenterInfo[area]=Hash.new 
+           #@popCenterInfo[area]['region']=""
+           @popCenterInfo[area]['banner']=fixBanner(line[36..37])
+           @popCenterInfo[area]['name']=line[61..73].strip
+           @popCenterInfo[area]['type']=line[52..60].strip
+           @popCenterInfo[area]['defense']=line[77..85].strip
+           @popCenterInfo[area]['source']="Encounter"
+           #puts "area=#{area} #{@popCenterInfo[area]}"
+        end
+     end
   end
 
   def collectMattersCovertEsotericAndGeneral(line)
@@ -334,18 +416,22 @@ class AlamazeTurnParser
      if md = line.match(/THERE IS A (\S+) LOCATED IN AREA (\w\w)/)
         area = md[2]
         @popCenterInfo=Hash.new if @popCenterInfo == nil
-        @popCenterInfo[area]=Hash.new if @popCenterInfo[area] == nil
-        @popCenterInfo[area]['type']=md[1]
-        @popCenterInfo[area]['source']="Divined"
+        if @popCenterInfo[area] == nil
+           @popCenterInfo[area]=Hash.new 
+           @popCenterInfo[area]['type']=md[1]
+           @popCenterInfo[area]['source']="Divined"
+        end
      end
      if md = line.match(/THERE IS A (\S+).* (\S+) LOCATED IN AREA (\w\w)/)
         #p md
         area = md[3]
         @popCenterInfo=Hash.new if @popCenterInfo == nil
-        @popCenterInfo[area]=Hash.new if @popCenterInfo[area] == nil
-        @popCenterInfo[area]['banner']=fixBanner(md[1][0..1])
-        @popCenterInfo[area]['type']=md[2]
-        @popCenterInfo[area]['source']="Divined"
+        if @popCenterInfo[area] == nil
+           @popCenterInfo[area]=Hash.new 
+           @popCenterInfo[area]['banner']=fixBanner(md[1][0..1])
+           @popCenterInfo[area]['type']=md[2]
+           @popCenterInfo[area]['source']="Divined"
+        end
      end
   
   end 
@@ -365,7 +451,7 @@ class AlamazeTurnParser
   def collectArtifactStatus(line)
      return if line.include? "STATUS"
      return if line.include? "POSSESSOR"
-     return if line.include? "Spies"
+     return if line.include? "SPIES"
      #puts "[01234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789]"
      #printf("[%s]\n",line)
      artifact=Hash.new
@@ -385,12 +471,13 @@ class AlamazeTurnParser
 #          AREA    POSSESSOR                            FULL NAME                      SHORT NAME
 #           CD   WITCHLORD PRINCE MAL REYNALDS
 #                                                     RING OF PROTECTION                   18110
+#          OA   1ST DRUID             STAFF OF THE GREAT ORATOR          73064                                 html
   def collectArtifactRecon(line)
      return if line.include? "POSSESSOR"
      return if line.include? "MEMORIUM"
-     return if line.include? "RESULT:"
-     return if line.include? "nothing to report"
-     return if line.include? "Raven Familiar"
+     return if line.include? "RESULT"
+     return if line.include? "NOTHING TO REPORT"
+     return if line.include? "RAVEN FAMILIAR"
      #puts "[01234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789]"
      #printf("[%s]\n",line)
      #return if line.strip.size < 60
@@ -407,10 +494,16 @@ class AlamazeTurnParser
         @tempArtifactInfo=Hash.new
         @tempArtifactInfo[:source] = "Recon"
         @tempArtifactInfo[:area] = area
-        @tempArtifactInfo[:posessor] = line[14..50].strip
+        #@tempArtifactInfo[:posessor] = line[14..50].strip
+        @tempArtifactInfo[:posessor] = line[14..36].strip
         if line.size > 60
-           @tempArtifactInfo[:fullName] = line[51..83].strip
-           @tempArtifactInfo[:shortName] = line[83..100].strip
+           if @format == FORMAT_PDF
+              @tempArtifactInfo[:fullName] = line[51..83].strip
+              @tempArtifactInfo[:shortName] = line[83..100].strip
+           else
+              @tempArtifactInfo[:fullName] = line[37..71].strip
+              @tempArtifactInfo[:shortName] = line[72..100].strip
+           end
            @artifactInfo=Array.new if @artifactInfo == nil
            @artifactInfo.push @tempArtifactInfo
            @tempArtifactInfo = nil
@@ -427,27 +520,33 @@ class AlamazeTurnParser
         if md=part.match(/.* A (.*) AT (\w\w)/)
            area=md[2]
            @popCenterInfo=Hash.new if @popCenterInfo == nil
-           @popCenterInfo[area]=Hash.new if @popCenterInfo[area] == nil
-           @popCenterInfo[area]['type']=md[1]
-           @popCenterInfo[area]['source']="Passed"
+           if @popCenterInfo[area] == nil
+              @popCenterInfo[area]=Hash.new 
+              @popCenterInfo[area]['type']=md[1]
+              @popCenterInfo[area]['source']="Passed"
+           end
         end
      end
   end
   # Process the section of the turn results that lists
   # the current or forecasted production
   # forecast values will overwrite current ones.
+#[01234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789]
+#[            3  AY  RUIN                TOWN     118005   63017   28277   46462    NA                                html
   def collectProduction(line)
      return if line.include? "---"
      return if line.include? "==="
      return if line.include? "CENSUS"
-     return if line.include? "Our kingdom"
+     return if line.include? "OUR KINGDOM"
      line.gsub!(',','')
+     #puts "[01234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789]"
+     #printf("[%s]\n",line)
      (region,area)=line.split
      return if area =~ /\d/
 
      name=line[18..38].strip
-     type=line[39..42].strip
-     (defense,census,food,gold,other)=line[43..line.size].split
+     type=line[39..45].strip
+     (defense,census,food,gold,other)=line[46..line.size].split
 
      @popCenterInfo=Hash.new if @popCenterInfo == nil
      @popCenterInfo[area]=Hash.new if @popCenterInfo[area] == nil
@@ -494,7 +593,21 @@ class AlamazeTurnParser
   def collectMilitaryRecon(line)
      return if line.include? "BRIGADES OF"
      return if line.include? "RECRUITS"
+     #puts "[01234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789]"
+     #printf("[%s]\n",line)
      (id,brigs,reg,area,rest)=line.split(' ',5)
+
+     if line.include? "INVISIBLE"
+        area=rest.split.last
+        id = "#{area}?"
+        @militaryInfo[id] = Hash.new if @militaryInfo[id] == nil
+        @militaryInfo[id][:area] = area
+        @militaryInfo[id][:banner] = "??"
+        @militaryInfo[id][:size] = "Invisible"
+        @militaryInfo[id][:source] = "Recon"
+        return
+     end
+
      if( id.size == 3 )
         @tempGroupInfo = Hash.new
         @tempGroupInfo[:id]=id
@@ -535,6 +648,8 @@ class AlamazeTurnParser
   #
   def collectMilitaryStatus(line)
      return if line.include? "XXXX"
+     #puts "[01234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789]"
+     #printf("[%s]\n",line)
      if( line.include? "GROUP:" )
         (x,num,kingdom)=line.split
         groupID="#{num[0]}#{kingdom[0,2]}"
@@ -617,6 +732,7 @@ class AlamazeTurnParser
 
   # 
   #      PRINCE            MAL REYNALDS          THE WITCHLORD CITY AT CD IN OAKENDELL.
+#[     AGENT 10          LIONHEART             THE WITCHLORD VILLAGE AT DM IN NORTHERN MISTS.
   def collectEmissaryLocations(line)
      #puts "[01234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789]"
      #printf("[%s]\n",line)
@@ -625,7 +741,7 @@ class AlamazeTurnParser
      return if rank.empty?
      name = line[20,22].strip
      (x,kingdom,x,x3,area,x4)=line[43..line.size].split
-     @banner=fixBanner(kingdom[0,2]) if rank == "KING" or rank == "REGENT"
+     @banner=fixBanner(kingdom[0,2]) if rank == "KING" or rank == "REGENT" or rank == "QUEEN"
      if rank == "CONSUL"
         #@banner="AN" if line.match(/ANCIENT ONES/)
         @banner="AN" 
@@ -657,21 +773,35 @@ class AlamazeTurnParser
   end
 
   # 
-  #    GI  COUNT          GURG HEARTCRUSHER     CD  LORETHANE   AWAITING FURTHER ORDERS.                                         
+  #01234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789
+  #     GI  COUNT          GURG HEARTCRUSHER     CD  LORETHANE   AWAITING FURTHER ORDERS.                                         
+  #          SW  AGENT 6        APEXIOUS              DR  CORLOUS     COMPLETED HIS ASSIGNED TRAINING.
   # 
   def collectEmissaryRecon(line)
      return if line.include? "POP-NAME"
-     banner = fixBanner(line[5,2])
-     rank = line[9..23].strip
-     name = line[24..45].strip
-     area = line[46,2]
+     #puts "[01234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789]"
+     #printf("[%s]\n",line)
+
+     if @format == FORMAT_PDF
+        banner = fixBanner(line[5,2])
+        rank = line[9..23].strip
+        name = line[24..45].strip
+        area = line[46,2]
+     else
+        banner = fixBanner(line[10..11])
+        rank = line[14..28].strip
+        name = line[29..50].strip
+        area = line[51..52]
+     end
 
      @emissaryInfo=Hash.new if @emissaryInfo == nil
-     @emissaryInfo[name]=Hash.new if @emissaryInfo[name] == nil
-     @emissaryInfo[name]['banner']=banner
-     @emissaryInfo[name]['rank']=rank
-     @emissaryInfo[name]['area']=area
-     @emissaryInfo[name]['source']="Recon"
+     if @emissaryInfo[name] == nil
+        @emissaryInfo[name]=Hash.new 
+        @emissaryInfo[name]['banner']=banner
+        @emissaryInfo[name]['rank']=rank
+        @emissaryInfo[name]['area']=area
+        @emissaryInfo[name]['source']="Recon"
+     end
   end
 
   # Callback for PDF processing thingy
@@ -679,6 +809,18 @@ class AlamazeTurnParser
   # First check to see if we are in a new section of the turn resutls or not.
   # If not, then process the line based on what section we are in.
   def show_text(string, *params)
+    newSection=checkSection(string)
+    processLine(string) if newSection == false
+  end
+
+  def show_html(string)
+    return unless string.ascii_only?
+    string.gsub!('<pre>','')
+    string.gsub!('</pre>','')
+    string.gsub!('<br>','')
+    string.gsub!('<i>','')
+    string.gsub!('</i>','')
+    #string.gsub!('<p.*>(.*)</p>','\1')
     newSection=checkSection(string)
     processLine(string) if newSection == false
   end
@@ -710,6 +852,7 @@ class AlamazeTurnParser
   # Just print out the information stored in the army group hash
   # Fields are separated by commas (CSV)
   def showArmies(ofile=$stdout)
+     return if !defined? @militaryInfo
      ofile.printf("Turn,Record Type,Data Source,Map Location,Kingdom,Name,Region,size,archers,food,horse,leader1,leader2,leader3,wizard1,wizard2,wizard3\n")
      @militaryInfo.keys.sort.each {|id|
         m=@militaryInfo[id]
@@ -722,7 +865,7 @@ class AlamazeTurnParser
   # Just print out the information stored in the population center hash
   # Fields are separated by commas (CSV)
   def showPopInfo(ofile=$stdout)
-     ofile.printf("Turn,Record Type,Data Source,Map Location,Kingdom,Name,Type,Defense,Census,Food,Gold,Other\n")
+     ofile.printf("Turn,Record Type,Data Source,Map Location,Kingdom,Region,Name,Type,Defense,Census,Food,Gold,Other\n")
      @popCenterInfo.keys.sort.each {|area|
         p=@popCenterInfo[area]
         record=[@turnNumber,"P",p['source'],area,p['banner'],p['name'],p['region'],p['type'],p['defense'],p['census'],p['food'],p['gold'],p['other']].join(',')

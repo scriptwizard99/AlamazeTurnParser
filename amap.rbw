@@ -32,7 +32,7 @@ require_relative 'alamazeTurnParser'
 
 $debug=0
 
-VERSION="1.1.1"
+VERSION="1.2.0"
 
 BOX_HEIGHT=14
 BOX_WIDTH=BOX_HEIGHT
@@ -89,16 +89,22 @@ $kingdomNameMap = {
     'BL' => 'Black Dragons',
     'DA' => 'Dark Elves',
     'DE' => 'Demon Princes',
+    'DU' => 'Druids',
     'DW' => 'Dwarves',
     'EL' => 'High Elves',
     'GI' => 'Stone Giants',
     'GN' => 'Gnomes',
+    'HA' => 'Halfling',
+    'NO' => 'Nomads',
+    'PA' => 'Paladin',
     'RA' => 'Rangers',
     'RD' => 'Red Dragons',
     'SO' => 'Sorcerer',
+    'SW' => 'Swamp Men',
     'TR' => 'Trolls',
     'UN' => 'Underworld',
     'WA' => 'Warlock',
+    'WE' => 'Westmen',
     'WI' => 'Witchlord',
     'NE' => 'Neutral',
     'XX' => 'Destroyed'
@@ -1571,39 +1577,63 @@ def openDocument
   end
 end
 
-def runParser(filename)
+def runParser(filename,format=AlamazeTurnParser::FORMAT_HTML)
    clearText
-   tempFile = "ofile.dat"
-   File.delete(tempFile) if File.exists?(tempFile)
-   #cmd="ruby parse1.rb #{filename} > #{tempFile}"
-   appendText("Attempting to parse #{filename}\n")
-
-   ofile = File.new(tempFile, File::CREAT|File::TRUNC|File::RDWR)
-   if ofile == nil or File.writable?(tempFile) == false
-      appendTextWithTag("Failure opening #{tempFile} for writing. Parsing FAILED!\n", TEXT_TAG_DANGER)
-      return
-   end
-
-   receiver = AlamazeTurnParser.new
-   pdf = PDF::Reader.file(filename,receiver)
-   receiver.showInfoRecord(ofile)
-   receiver.showPopInfo(ofile)
-   receiver.showEmissaryInfo(ofile)
-   receiver.showArmies(ofile)
-   receiver.showArtifactInfo(ofile)
-   receiver.showRegionalInfo(ofile)
-   ofile.close
+   begin
+      tempFile = "ofile.dat"
+      File.delete(tempFile) if File.exists?(tempFile)
+      #cmd="ruby parse1.rb #{filename} > #{tempFile}"
+      appendText("Attempting to parse #{filename}\n")
+   
+      ofile = File.new(tempFile, File::CREAT|File::TRUNC|File::RDWR)
+      if ofile == nil or File.writable?(tempFile) == false
+         appendTextWithTag("Failure opening #{tempFile} for writing. Parsing FAILED!\n", TEXT_TAG_DANGER)
+         return
+      end
+   
+      parser = AlamazeTurnParser.new
+      if( format == AlamazeTurnParser::FORMAT_PDF) 
+         appendText("Processing PDF file\n")
+         parser.setFormat(AlamazeTurnParser::FORMAT_PDF)
+         pdf = PDF::Reader.file(filename,parser)
+      else
+         appendText("Processing HTML file\n")
+         parser.setFormat(AlamazeTurnParser::FORMAT_HTML)
+         IO.foreach(filename) do |line|
+            parser.show_html(line)
+         end
+      end
+      parser.showInfoRecord(ofile)
+      parser.showPopInfo(ofile)
+      parser.showEmissaryInfo(ofile)
+      parser.showArmies(ofile)
+      parser.showArtifactInfo(ofile)
+      parser.showRegionalInfo(ofile)
+      ofile.close
+   rescue Exception => e
+         appendText("Caught Exception.\n")
+         appendText("#{e.inspect}.\n")
+         appendText("\nBacktrace:.\n")
+         appendText("#{e.backtrace}.\n")
+   end # end rescue
 
 
    loadDocument(tempFile)
-end
+end # end runParser
 
 def parseTurn
-  filetypes = [ ["Alamaze Turn Results", "*.PDF"],["All Files", "*"] ]
+  filetypes = [ ["Alamaze Turn Results", "*.PDF *.html"],["All Files", "*"] ]
   filename = Tk.getOpenFile('filetypes' => filetypes,
                             'parent' => $root )
+
+  if filename.upcase.include? "PDF" 
+     format = AlamazeTurnParser::FORMAT_PDF
+  else
+     format = AlamazeTurnParser::FORMAT_HTML
+  end
+
   if filename != ""
-    runParser(filename)
+    runParser(filename,format)
   end
 end
 
@@ -2782,6 +2812,11 @@ begin
    setupKingdomBitmaps
    
    appendTextWithTag("#{programName}\n", TEXT_TAG_TITLE)
+
+   if defined? ENV['OCRA_EXECUTABLE']
+      appendText("OCRA_EXECUTABLE=[#{ENV['OCRA_EXECUTABLE']}]\n")
+   end
+   appendText("$0=[#{$0}]\n")
    
    tweakVolume
 

@@ -51,8 +51,10 @@ begin
    logOut.puts "Parsing #{filename}"
    parser = AlamazeTurnParser.new
    if filename.upcase.include? "PDF"
+      parser.setFormat(AlamazeTurnParser::FORMAT_PDF)
       pdf = PDF::Reader.file(filename,parser)
    else
+      parser.setFormat(AlamazeTurnParser::FORMAT_HTML)
       IO.foreach(filename) do |line|
          parser.show_html(line)
       end

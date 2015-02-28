@@ -1588,9 +1588,11 @@ def runParser(filename,format=AlamazeTurnParser::FORMAT_HTML)
       parser = AlamazeTurnParser.new
       if( format == AlamazeTurnParser::FORMAT_PDF) 
          appendText("Processing PDF file\n")
+         parser.setFormat(AlamazeTurnParser::FORMAT_PDF)
          pdf = PDF::Reader.file(filename,parser)
       else
          appendText("Processing HTML file\n")
+         parser.setFormat(AlamazeTurnParser::FORMAT_HTML)
          IO.foreach(filename) do |line|
             parser.show_html(line)
          end

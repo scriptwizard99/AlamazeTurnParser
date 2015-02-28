@@ -32,7 +32,7 @@ require_relative 'alamazeTurnParser'
 
 $debug=0
 
-VERSION="1.1.2"
+VERSION="1.2.0"
 
 BOX_HEIGHT=14
 BOX_WIDTH=BOX_HEIGHT

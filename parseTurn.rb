@@ -31,7 +31,7 @@ if filename.nil?
    exit 1
 end
 
-VERSION="1.1.2"
+VERSION="1.2.0"
 
 myself=$0.gsub('\\','/')
 unless ENV['OCRA_EXECUTABLE'].nil?

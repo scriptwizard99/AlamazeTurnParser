@@ -213,7 +213,7 @@ class AreaList
       return 999 if loc2 == nil or loc2.empty?
       yPart = loc1[0].ord - loc2[0].ord
       xPart = loc1[1].ord - loc2[1].ord
-      return xPart.abs + yPart.abs
+      return [xPart.abs , yPart.abs].max
    end
 end # class AreaList
 

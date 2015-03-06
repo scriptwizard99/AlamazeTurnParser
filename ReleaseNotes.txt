@@ -3,9 +3,10 @@ Release Notes for the Alamaze Turn Parser
 
 -----------------------------------------------------
 Version x.x.x
+- Fix for bug #11 for passed PCs
 - Added ReleaseNotes.txt file
 - Worked on dist scripts so releasing is easier
-- Fix for #10 Range problem on the Emmy tool
+- Fix for bug #10 Range problem on the Emmy tool
 
 -----------------------------------------------------
 

@@ -378,7 +378,7 @@ class AlamazeTurnParser
 
      if @format == FORMAT_PDF
         area = line[27..28]
-        if @popCenterInfo[area] == nil
+        if @popCenterInfo[area] == nil or @popCenterInfo[area]['source']=="Passed"
            @popCenterInfo[area]=Hash.new 
            #@popCenterInfo[area]['region']=""
            @popCenterInfo[area]['banner']=fixBanner(line[32..33])
@@ -390,7 +390,7 @@ class AlamazeTurnParser
      else
         line.gsub!(',','')
         area = line[30..31]
-        if @popCenterInfo[area] == nil
+        if @popCenterInfo[area] == nil or @popCenterInfo[area]['source']=="Passed"
            @popCenterInfo[area]=Hash.new 
            #@popCenterInfo[area]['region']=""
            @popCenterInfo[area]['banner']=fixBanner(line[36..37])
@@ -419,7 +419,7 @@ class AlamazeTurnParser
         if @popCenterInfo[area] == nil
            @popCenterInfo[area]=Hash.new 
            @popCenterInfo[area]['type']=md[1]
-           @popCenterInfo[area]['source']="Divined"
+           @popCenterInfo[area]['source']="Div/Srch"
         end
      end
      if md = line.match(/THERE IS A (\S+).* (\S+) LOCATED IN AREA (\w\w)/)
@@ -430,7 +430,7 @@ class AlamazeTurnParser
            @popCenterInfo[area]=Hash.new 
            @popCenterInfo[area]['banner']=fixBanner(md[1][0..1])
            @popCenterInfo[area]['type']=md[2]
-           @popCenterInfo[area]['source']="Divined"
+           @popCenterInfo[area]['source']="Div/Srch"
         end
      end
   
@@ -515,14 +515,19 @@ class AlamazeTurnParser
   def collectMilitaryManeuvers(line)
      return if line.include? "NO POPULATION CENTERS"
      return if not line.include? "WE PASSED"
+     #puts "[01234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789]"
      #printf("[%s]\n",line)
      line.split(',').each do |part|
-        if md=part.match(/.* A (.*) AT (\w\w)/)
+        if md=part.match(/.* (.*) AT (\w\w)/)
            area=md[2]
            @popCenterInfo=Hash.new if @popCenterInfo == nil
            if @popCenterInfo[area] == nil
               @popCenterInfo[area]=Hash.new 
-              @popCenterInfo[area]['type']=md[1]
+              if @format == FORMAT_PDF
+                 @popCenterInfo[area]['type']=md[1]
+              else
+                 @popCenterInfo[area]['type']=md[1].split.last
+              end
               @popCenterInfo[area]['source']="Passed"
            end
         end

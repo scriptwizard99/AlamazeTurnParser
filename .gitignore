@@ -8,6 +8,7 @@
 *.log
 *.err
 *.out
+dist/
 
 # sample data
 /sampleHTML/

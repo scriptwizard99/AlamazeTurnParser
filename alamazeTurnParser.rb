@@ -51,6 +51,7 @@ class AlamazeTurnParser
   SECTION_MILITARY_MANEUVERS=19
   SECTION_EYES_ONLY=20
   SECTION_VICTORY_CONDITIONS=21
+  SECTION_ESO=22
 
   @section=0
   @banner="xxxxxxx"
@@ -142,6 +143,8 @@ class AlamazeTurnParser
         @section = SECTION_MILITARY_STATUS
      elsif ( string.include? "Additional intelligence for your eyes only")
         @section = SECTION_EYES_ONLY
+     elsif ( string.include? "Early Strategic Objectives for")
+        @section = SECTION_ESO
      elsif ( string.include? "victory conditions")
         @section = SECTION_VICTORY_CONDITIONS
      elsif ( string.include? "Regional Summary")

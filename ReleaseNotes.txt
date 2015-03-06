@@ -3,6 +3,7 @@ Release Notes for the Alamaze Turn Parser
 
 -----------------------------------------------------
 Version x.x.x
+- Detects ESO section in results instead of trying to parse them as artifact recon
 - Fix for bug #11 for passed PCs
 - Added ReleaseNotes.txt file
 - Worked on dist scripts so releasing is easier

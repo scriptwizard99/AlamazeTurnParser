@@ -1,33 +1,41 @@
 Release Notes for the Alamaze Turn Parser
 
-
------------------------------------------------------
-Version x.x.x
+--------------------------------------------------------------------------------
+Version 1.2.1
+--------------------------------------------------------------------------------
 - Detects ESO section in results instead of trying to parse them as artifact recon
 - Fix for bug #11 for passed PCs
 - Added ReleaseNotes.txt file
 - Worked on dist scripts so releasing is easier
 - Fix for bug #10 Range problem on the Emmy tool
 
------------------------------------------------------
-
-
+--------------------------------------------------------------------------------
 Version 1.2.0
+--------------------------------------------------------------------------------
 - Supports parsing HTML results
-- Includes a windows executable for the command line parser to be used with Thudargh's Excel map.
+- Includes a windows executable for the command line parser to be used with 
+  Thudargh's Excel map.
 
+--------------------------------------------------------------------------------
 Version 1.1.1
+--------------------------------------------------------------------------------
 - Adds an option to the right click context menu of a population center called 'Destroy PC'. 
   Choosing this option does exactly that. It updates the owner to XX and the region to X. 
   The icon will change to a white X on a black background. You cannot un-destroy a PC
 
+--------------------------------------------------------------------------------
 Version 1.1.0
-- Adds the 'Fix Regions' menu option which will check the region number in all known population centers
-  and fix any that are incorrect.
+--------------------------------------------------------------------------------
+- Adds the 'Fix Regions' menu option which will check the region number in all 
+  known population centers and fix any that are incorrect.
 
+--------------------------------------------------------------------------------
 Version 1.0.0
+--------------------------------------------------------------------------------
 - Fixed a bug in 1.0.0 where it really didn't work for other users.
 
+--------------------------------------------------------------------------------
 Version 1.0.0
+--------------------------------------------------------------------------------
 - First version to include a stand-alone Windows executable
   (that is, you do not need to install Ruby to run the parser)

@@ -520,8 +520,9 @@ class AlamazeTurnParser
      return if not line.include? "WE PASSED"
      #puts "[01234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789]"
      #printf("[%s]\n",line)
+     line.gsub!(/.*DURING MOVEMENT WE PASSED A/,'')
      line.split(',').each do |part|
-        if md=part.match(/.* (.*) AT (\w\w)/)
+        if md=part.match(/ (.*) AT (\w\w)/)
            area=md[2]
            @popCenterInfo=Hash.new if @popCenterInfo == nil
            if @popCenterInfo[area] == nil
@@ -530,6 +531,7 @@ class AlamazeTurnParser
                  @popCenterInfo[area]['type']=md[1]
               else
                  @popCenterInfo[area]['type']=md[1].split.last
+                 @popCenterInfo[area]['banner']=fixBanner(md[1].split.first[0,2]) if  @popCenterInfo[area]['banner'] == nil
               end
               @popCenterInfo[area]['source']="Passed"
            end

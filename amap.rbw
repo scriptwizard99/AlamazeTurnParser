@@ -23,12 +23,12 @@
 =end
 
 require 'tk'
-require_relative 'version'
-require_relative 'regions'
-require_relative 'emmyTool'
-require_relative 'emmyToolWindow'
-require_relative 'exploredDialog'
-require_relative 'alamazeTurnParser'
+require_relative 'lib/version'
+require_relative 'lib/regions'
+require_relative 'lib/emmyTool'
+require_relative 'lib/emmyToolWindow'
+require_relative 'lib/exploredDialog'
+require_relative 'lib/alamazeTurnParser'
 #require 'win32/sound'
 #include Win32
 

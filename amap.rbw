@@ -23,11 +23,12 @@
 =end
 
 require 'tk'
-require_relative 'version'
-require_relative 'regions'
-require_relative 'emmyTool'
-require_relative 'emmyToolWindow'
-require_relative 'alamazeTurnParser'
+require_relative 'lib/version'
+require_relative 'lib/regions'
+require_relative 'lib/emmyTool'
+require_relative 'lib/emmyToolWindow'
+require_relative 'lib/exploredDialog'
+require_relative 'lib/alamazeTurnParser'
 #require 'win32/sound'
 #include Win32
 
@@ -1291,13 +1292,35 @@ def markExplored(tag)
 end
 
 def addExploredAreas(line)
-   (turn,x,areaList)=line.split(',',3)
+   (turn,x,areaList)=line.strip.split(',',3)
    return if areaList == nil or areaList.size == 0
    areaList.split(',').each do |area|
       $exploredAreas.push area.strip
-      addColoredMapMarker(area,EXPLORED_MARKER,EXPLORED_COLOR)
+      addMapMarker(area,EXPLORED_MARKER_NOPC)
    end
 end
+
+def addNoUSAreas(line)
+#  appendText("line=[#{line}]\n")
+   (turn,x,areaList)=line.strip.split(',',3)
+   return if areaList == nil or areaList.size == 0
+#  appendText("areaList=[#{areaList}]\n")
+   areaList.split(',').each do |area|
+#     appendText("area=[#{area}]\n")
+      $noUSAreas.push area.strip
+      addMapMarker(area,EXPLORED_MARKER_NOUS)
+   end
+end
+
+def addAllClearAreas(line)
+   (turn,x,areaList)=line.strip.split(',',3)
+   return if areaList == nil or areaList.size == 0
+   areaList.split(',').each do |area|
+      $allClearAreas.push area.strip
+      addMapMarker(area,EXPLORED_MARKER_ALLCLEAR)
+   end
+end
+
 
 # [@turnNumber,"P",p['source'],area,p['banner'],p['name'],p['type'],p['defense'],p['census'],p['food'],p['gold'],p['other']].join(',')
 def addEmissary(line)
@@ -1551,8 +1574,12 @@ def loadDocument(filename)
         addArtifact(line)
      when 'R'
         addRegion(line)
-     when 'X'
+     when EXPLORED_MARKER_NOPC
         addExploredAreas(line)
+     when EXPLORED_MARKER_NOUS
+        addNoUSAreas(line)
+     when EXPLORED_MARKER_ALLCLEAR
+        addAllClearAreas(line)
      else
         appendTextWithTag("Unknown record type=#{recordType}\n", TEXT_TAG_DANGER)
      end
@@ -1659,7 +1686,13 @@ def saveDocument(filename)
    $artifactList.saveDataToFile(ofile)
    $regionList.saveDataToFile(ofile)
 
-   record = [$currentTurn, "X", $exploredAreas].join(',')
+   record = [$currentTurn, EXPLORED_MARKER_NOPC, $exploredAreas].join(',')
+   ofile.puts record
+
+   record = [$currentTurn, EXPLORED_MARKER_NOUS, $noUSAreas].join(',')
+   ofile.puts record
+
+   record = [$currentTurn, EXPLORED_MARKER_ALLCLEAR, $allClearAreas].join(',')
    ofile.puts record
 
    ofile.close
@@ -1742,10 +1775,14 @@ def addSizedMarker(size,x,y,marker,markerText,loc,banner)
       (m,t) = drawAVillage(size,x,y,markerText,color)
    elsif marker == "T"
       (m,t) = drawATown(size,x,y,markerText,color)
-   elsif marker == "#"
+   elsif marker == EXPLORED_MARKER_NOPC
       m = drawNoPC(size,x,y,loc)
-   elsif marker == "@"
-      m = drawNoUS(size,x,y)
+   elsif marker == EXPLORED_MARKER_NOUS
+      m = drawNoUS(size,x,y,loc)
+   elsif marker == EXPLORED_MARKER_ALLCLEAR
+      m = drawAllClear(size,x,y,loc)
+   elsif marker == EXPLORED_MARKER_TEMP
+      m = drawTempMarker(size,x,y,loc)
    else
       m = TkcText.new($canvas, x, y, 'text' => markerText, 'tags' => [marker,loc,'Marker', $offsets[size][:tag] ],
                       'fill' => color, 'font' => $offsets[size][:font] )
@@ -1875,6 +1912,23 @@ def deleteNoPCMarker(area)
       $canvas.delete(uniqueTag)
 end
 
+def deleteNoUSMarker(area)
+      $noUSAreas.delete(area.strip)
+      uniqueTag="NoUS-#{area}"
+      $canvas.delete(uniqueTag)
+end
+
+def deleteAllClearMarker(area)
+      $allClearAreas.delete(area.strip)
+      uniqueTag="AllClear-#{area}"
+      $canvas.delete(uniqueTag)
+end
+
+def deleteTempMarker(area)
+      uniqueTag="Temp-#{area}"
+      $canvas.delete(uniqueTag)
+end
+
 def rightClickMarker(x,y,area,marker)
    pm = TkMenu.new do
      title 'Actions'
@@ -1889,10 +1943,25 @@ def rightClickMarker(x,y,area,marker)
              'label'     => "Destory PC",
              'command'   => proc { destroyPC area}
              )
-   elsif marker == "#"
+   elsif marker == EXPLORED_MARKER_NOPC
       pm.add('command',
-             'label'     => "Delete Explored marker",
+             'label'     => "Delete Exploration Marker",
              'command'   => proc { deleteNoPCMarker area}
+             )
+   elsif marker == EXPLORED_MARKER_NOUS
+      pm.add('command',
+             'label'     => "Delete Exploration Marker",
+             'command'   => proc { deleteNoUSMarker area}
+             )
+   elsif marker == EXPLORED_MARKER_ALLCLEAR
+      pm.add('command',
+             'label'     => "Delete Exploration Marker",
+             'command'   => proc { deleteAllClearMarker area}
+             )
+   elsif marker == EXPLORED_MARKER_TEMP
+      pm.add('command',
+             'label'     => "Delete Temp Marker",
+             'command'   => proc { deleteTempMarker area}
              )
    end
    pm.post(x.to_i,y.to_i)
@@ -2252,131 +2321,10 @@ def tagText(textBox,pattern,tag)
 end
 
 
-def createScrollableListbox(inputFrame)
-    frame = TkFrame.new(inputFrame)
-    lb = TkListbox.new(frame) {
-             selectmode 'multiple'
-             width 5
-             height 9
-             pack('side'=>'left')
-    }
-    sb = TkScrollbar.new(frame) {
-       command proc { |*args|
-          lb.yview(*args)
-       }
-       pack('side' => 'left', 'fill' => 'y', 'expand' => 0)
-    }
-    lb.yscrollcommand(proc { |first,last|
-                             sb.set(first,last) })
-    frame.pack('fill' => 'both', 'expand' => 0)
-    return lb
-end
-
-def shiftValues(from,to,highlight)
-   fromList = from.curselection
-   while fromList.size > 0 do
-      index = fromList.first
-      area = from.get(index)
-      to.insert('end', area)
-      from.delete(index)
-      fromList = from.curselection
-      if highlight
-         highlightTag("box-#{area}",false)
-      else
-         unHighlightTag("box-#{area}")
-      end
-   end
-end
-
 def fixRegions
    clearText
    $regionList.readRegionBorderFile
    $popCenterList.fixRegions
-end
-
-def markExploredFromLB(lb)
-   unHighlight
-   areaList = lb.get(0,'end')
-   areaList.each do |area|
-      $exploredAreas.push area.strip
-      addColoredMapMarker(area,EXPLORED_MARKER,EXPLORED_COLOR)
-   end
-   lb.delete(0,'end')
-   $exploreDialog.destroy
-end
-
-def enterAreas(entry,rightListBox)
-   entryText = entry.get
-   areaList = entryText.upcase.split(/\W/)
-   areaList.each do |area|
-      #next if area.size != 2
-      rightListBox.insert('end',area)
-      highlightTag("box-#{area}", false)
-   end
-   entry.delete(0,'end')
-end
-
-def createAddExploredDialog
-   unHighlight
-   $exploreDialog.destroy if TkWinfo.exist?($exploreDialog)
-   $exploreDialog = TkToplevel.new($root) do
-      title 'Where I Have Gone Before'
-   end
-   frame = TkFrame.new($exploreDialog) do
-      relief 'sunken'
-      borderwidth 3
-      background 'darkgrey'
-      padx 10
-      pady 10
-   end
-   topFrame = TkFrame.new(frame)
-   middleFrame = TkFrame.new(frame)
-   bottomFrame = TkFrame.new(frame)
-   leftLbFrame = TkFrame.new(middleFrame)
-   rightLbFrame = TkFrame.new(middleFrame)
-   buttonFrame = TkFrame.new(middleFrame)
-
-   leftListBox = createScrollableListbox(leftLbFrame)
-   rightListBox = createScrollableListbox(rightLbFrame)
-
-   TkLabel.new(topFrame) do
-      text 'Enter explored areas: '
-      pack('side'=>'left')
-   end
-
-   entry = TkEntry.new(topFrame) do
-      width '10'
-      pack('side'=>'left', 'fill' =>'x', 'expand' => 0)
-   end
-   entry.bind('Return', proc { enterAreas(entry,rightListBox) } )
-
-
-   TkButton.new(buttonFrame) do
-      text "<-"
-      command (proc{shiftValues(rightListBox,leftListBox,false)})
-      pack('side' => 'top', 'fill' => 'both', 'expand' => 1)
-   end
-   TkButton.new(buttonFrame) do
-      text "->"
-      command (proc{shiftValues(leftListBox,rightListBox,true)})
-      pack('side' => 'top', 'fill' => 'both', 'expand' => 1)
-   end
-
-   TkButton.new(bottomFrame) do
-      text "Make it so!"
-      command (proc{markExploredFromLB(rightListBox)})
-      pack('side' => 'top', 'fill' => 'x', 'expand' => 1)
-   end
-
-   leftListBox.pack('side' => 'left')
-   leftLbFrame.pack('side' => 'left')
-   buttonFrame.pack('side' => 'left', 'fill' => 'both', 'expand' => 1)
-   rightListBox.pack('side' => 'left')
-   rightLbFrame.pack('side' => 'left')
-   topFrame.pack('side' => 'top', 'fill' => 'both', 'expand' => 0)
-   middleFrame.pack('side' => 'top', 'fill' => 'both', 'expand' => 1)
-   bottomFrame.pack('side' => 'top', 'fill' => 'both', 'expand' => 0)
-   frame.pack('fill' => 'both', 'expand' => 1)
 end
 
 def createTextWindow
@@ -2604,27 +2552,6 @@ def initOffsets
    $offsets[:small][:font]= TkFont.new( "size" => '10' )
 end
 
-def drawNoUS(size,x,y)
-  x1 = x - ($offsets[size][:boxX]*0.10)
-  y1 = y - ($offsets[size][:boxX]*0.10)
-  x2 = x + ($offsets[size][:boxX]*0.10)
-  y2 = y + ($offsets[size][:boxX]*0.10)
-  oval = TkcOval.new($canvas, [x1,y1], [x2,y2] , 
-                         :fill => 'red', :outline => 'yellow',  'tags' => ['NoUS','Marker', $offsets[size][:tag] ])
-  return oval
-end
-
-def drawNoPC(size,x,y,loc)
-  x1 = x - ($offsets[size][:boxX]*0.10)
-  y1 = y - ($offsets[size][:boxX]*0.10)
-  x2 = x + ($offsets[size][:boxX]*0.10)
-  y2 = y + ($offsets[size][:boxX]*0.10)
-  uniqueTag="NoPC-#{loc}"
-  oval = TkcOval.new($canvas, [x1,y1], [x2,y2] , 
-                         :fill => 'red', :outline => 'black',  'tags' => ['NoPC','Marker', $offsets[size][:tag], uniqueTag ])
-  return oval
-end
-
 def drawAnArmy(size,x,y,id,color)
    p = TkcPolygon.new($canvas,
                       x +  $offsets[size][:boxX]/2.0, y +  $offsets[size][:boxY]/2.2,
@@ -2791,6 +2718,8 @@ def initVars
    $myGameInfoText.value = "A L A M A Z E"
    $currentOpenFile=nil
    $exploredAreas = Array.new
+   $noUSAreas = Array.new
+   $allClearAreas = Array.new
    $exploreDialog = nil
    $menuDialog = nil
    $emmyDialog.destroy if TkWinfo.exist?($emmyDialog)

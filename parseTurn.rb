@@ -21,8 +21,8 @@
     You can contact the author at scriptwizard99@gmail.com
 =end
 
-require_relative 'version'
-require_relative 'alamazeTurnParser'
+require_relative 'lib/version'
+require_relative 'lib/alamazeTurnParser'
 
 filename = ARGV[0]
 if filename.nil?

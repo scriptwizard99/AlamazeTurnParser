@@ -20,13 +20,39 @@
     You can contact the author at scriptwizard99@gmail.com
 =end
 
+EXPLORED_MARKER_NOPC='X'
+EXPLORED_MARKER_NOUS='@'
+EXPLORED_MARKER_ALLCLEAR='!'
+EXPLORED_MARKER_TEMP=4
 
-def markExploredFromLB(lb)
+$explorationMarkerMap = {
+   "NoPC" => EXPLORED_MARKER_NOPC,
+   "NoUS" => EXPLORED_MARKER_NOUS,
+   "AllClear" => EXPLORED_MARKER_ALLCLEAR,
+   "Temp" => EXPLORED_MARKER_TEMP
+}
+
+
+def markExploredFromLB(lb, typeLB)
    unHighlight
+
+   # Get Marker Type
+   mt = typeLB.get( typeLB.curselection )
+   appendText("Adding marker type [#{mt}]\n")
+   marker = $explorationMarkerMap[mt]
+
+   # Add Markers
    areaList = lb.get(0,'end')
    areaList.each do |area|
-      $exploredAreas.push area.strip
-      addColoredMapMarker(area,EXPLORED_MARKER,EXPLORED_COLOR)
+      case marker
+      when EXPLORED_MARKER_NOPC
+         $exploredAreas.push area.strip
+      when EXPLORED_MARKER_NOUS
+         $noUSAreas.push area.strip
+      when EXPLORED_MARKER_ALLCLEAR
+         $allClearAreas.push area.strip
+      end
+      addMapMarker(area,marker)
    end
    lb.delete(0,'end')
    $exploreDialog.destroy
@@ -91,9 +117,11 @@ def createAddExploredDialog
       pack('side' => 'top', 'fill' => 'both', 'expand' => 1)
    end
 
+   markerTypeBox = createExplorationMarkerTypeBox(buttonFrame)
+
    TkButton.new(bottomFrame) do
       text "Make it so!"
-      command (proc{markExploredFromLB(rightListBox)})
+      command (proc{markExploredFromLB(rightListBox,markerTypeBox)})
       pack('side' => 'top', 'fill' => 'x', 'expand' => 1)
    end
 
@@ -128,6 +156,24 @@ def createScrollableListbox(inputFrame)
     return lb
 end
 
+def createExplorationMarkerTypeBox(frame)
+
+    lb = TkListbox.new(frame) {
+             selectmode 'single'
+             width 10
+             height 4
+             pack('side'=>'top')
+    }
+
+    %w(NoPC NoUS AllClear Temp).each do |mtype|
+       lb.insert('end', mtype)
+    end
+
+    lb.selection_set(0)
+
+    return lb
+
+end
 
 def shiftValues(from,to,highlight)
    fromList = from.curselection
@@ -145,13 +191,14 @@ def shiftValues(from,to,highlight)
    end
 end
 
-def drawNoUS(size,x,y)
+def drawNoUS(size,x,y,loc)
   x1 = x - ($offsets[size][:boxX]*0.10)
   y1 = y - ($offsets[size][:boxX]*0.10)
   x2 = x + ($offsets[size][:boxX]*0.10)
   y2 = y + ($offsets[size][:boxX]*0.10)
+  uniqueTag="NoUS-#{loc}"
   oval = TkcOval.new($canvas, [x1,y1], [x2,y2] ,
-                         :fill => 'red', :outline => 'yellow',  'tags' => ['NoUS','Marker', $offsets[size][:tag] ])
+                         :fill => 'orange', :outline => 'black',  'tags' => ['NoUS','Marker', $offsets[size][:tag], uniqueTag ])
   return oval
 end
 
@@ -163,6 +210,28 @@ def drawNoPC(size,x,y,loc)
   uniqueTag="NoPC-#{loc}"
   oval = TkcOval.new($canvas, [x1,y1], [x2,y2] ,
                          :fill => 'red', :outline => 'black',  'tags' => ['NoPC','Marker', $offsets[size][:tag], uniqueTag ])
+  return oval
+end
+
+def drawAllClear(size,x,y,loc)
+  x1 = x - ($offsets[size][:boxX]*0.10)
+  y1 = y - ($offsets[size][:boxX]*0.10)
+  x2 = x + ($offsets[size][:boxX]*0.10)
+  y2 = y + ($offsets[size][:boxX]*0.10)
+  uniqueTag="AllClear-#{loc}"
+  oval = TkcOval.new($canvas, [x1,y1], [x2,y2] ,
+                         :fill => 'black', :outline => 'yellow',  'tags' => ['AllClear','Marker', $offsets[size][:tag], uniqueTag ])
+  return oval
+end
+
+def drawTempMarker(size,x,y,loc)
+  x1 = x - ($offsets[size][:boxX]*0.10)
+  y1 = y - ($offsets[size][:boxX]*0.10)
+  x2 = x + ($offsets[size][:boxX]*0.10)
+  y2 = y + ($offsets[size][:boxX]*0.10)
+  uniqueTag="Temp-#{loc}"
+  oval = TkcOval.new($canvas, [x1,y1], [x2,y2] ,
+                         :fill => 'purple', :outline => 'yellow',  'tags' => ['Temp','Marker', $offsets[size][:tag], uniqueTag ])
   return oval
 end
 

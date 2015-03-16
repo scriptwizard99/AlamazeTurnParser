@@ -1292,13 +1292,35 @@ def markExplored(tag)
 end
 
 def addExploredAreas(line)
-   (turn,x,areaList)=line.split(',',3)
+   (turn,x,areaList)=line.strip.split(',',3)
    return if areaList == nil or areaList.size == 0
    areaList.split(',').each do |area|
       $exploredAreas.push area.strip
-      addColoredMapMarker(area,EXPLORED_MARKER,EXPLORED_COLOR)
+      addMapMarker(area,EXPLORED_MARKER_NOPC)
    end
 end
+
+def addNoUSAreas(line)
+#  appendText("line=[#{line}]\n")
+   (turn,x,areaList)=line.strip.split(',',3)
+   return if areaList == nil or areaList.size == 0
+#  appendText("areaList=[#{areaList}]\n")
+   areaList.split(',').each do |area|
+#     appendText("area=[#{area}]\n")
+      $noUSAreas.push area.strip
+      addMapMarker(area,EXPLORED_MARKER_NOUS)
+   end
+end
+
+def addAllClearAreas(line)
+   (turn,x,areaList)=line.strip.split(',',3)
+   return if areaList == nil or areaList.size == 0
+   areaList.split(',').each do |area|
+      $allClearAreas.push area.strip
+      addMapMarker(area,EXPLORED_MARKER_ALLCLEAR)
+   end
+end
+
 
 # [@turnNumber,"P",p['source'],area,p['banner'],p['name'],p['type'],p['defense'],p['census'],p['food'],p['gold'],p['other']].join(',')
 def addEmissary(line)
@@ -1552,8 +1574,12 @@ def loadDocument(filename)
         addArtifact(line)
      when 'R'
         addRegion(line)
-     when 'X'
+     when EXPLORED_MARKER_NOPC
         addExploredAreas(line)
+     when EXPLORED_MARKER_NOUS
+        addNoUSAreas(line)
+     when EXPLORED_MARKER_ALLCLEAR
+        addAllClearAreas(line)
      else
         appendTextWithTag("Unknown record type=#{recordType}\n", TEXT_TAG_DANGER)
      end
@@ -1660,7 +1686,13 @@ def saveDocument(filename)
    $artifactList.saveDataToFile(ofile)
    $regionList.saveDataToFile(ofile)
 
-   record = [$currentTurn, "X", $exploredAreas].join(',')
+   record = [$currentTurn, EXPLORED_MARKER_NOPC, $exploredAreas].join(',')
+   ofile.puts record
+
+   record = [$currentTurn, EXPLORED_MARKER_NOUS, $noUSAreas].join(',')
+   ofile.puts record
+
+   record = [$currentTurn, EXPLORED_MARKER_ALLCLEAR, $allClearAreas].join(',')
    ofile.puts record
 
    ofile.close
@@ -1743,10 +1775,14 @@ def addSizedMarker(size,x,y,marker,markerText,loc,banner)
       (m,t) = drawAVillage(size,x,y,markerText,color)
    elsif marker == "T"
       (m,t) = drawATown(size,x,y,markerText,color)
-   elsif marker == "#"
+   elsif marker == EXPLORED_MARKER_NOPC
       m = drawNoPC(size,x,y,loc)
-   elsif marker == "@"
-      m = drawNoUS(size,x,y)
+   elsif marker == EXPLORED_MARKER_NOUS
+      m = drawNoUS(size,x,y,loc)
+   elsif marker == EXPLORED_MARKER_ALLCLEAR
+      m = drawAllClear(size,x,y,loc)
+   elsif marker == EXPLORED_MARKER_TEMP
+      m = drawTempMarker(size,x,y,loc)
    else
       m = TkcText.new($canvas, x, y, 'text' => markerText, 'tags' => [marker,loc,'Marker', $offsets[size][:tag] ],
                       'fill' => color, 'font' => $offsets[size][:font] )
@@ -1876,6 +1912,23 @@ def deleteNoPCMarker(area)
       $canvas.delete(uniqueTag)
 end
 
+def deleteNoUSMarker(area)
+      $noUSAreas.delete(area.strip)
+      uniqueTag="NoUS-#{area}"
+      $canvas.delete(uniqueTag)
+end
+
+def deleteAllClearMarker(area)
+      $allClearAreas.delete(area.strip)
+      uniqueTag="AllClear-#{area}"
+      $canvas.delete(uniqueTag)
+end
+
+def deleteTempMarker(area)
+      uniqueTag="Temp-#{area}"
+      $canvas.delete(uniqueTag)
+end
+
 def rightClickMarker(x,y,area,marker)
    pm = TkMenu.new do
      title 'Actions'
@@ -1890,10 +1943,25 @@ def rightClickMarker(x,y,area,marker)
              'label'     => "Destory PC",
              'command'   => proc { destroyPC area}
              )
-   elsif marker == "#"
+   elsif marker == EXPLORED_MARKER_NOPC
       pm.add('command',
-             'label'     => "Delete Explored marker",
+             'label'     => "Delete Exploration Marker",
              'command'   => proc { deleteNoPCMarker area}
+             )
+   elsif marker == EXPLORED_MARKER_NOUS
+      pm.add('command',
+             'label'     => "Delete Exploration Marker",
+             'command'   => proc { deleteNoUSMarker area}
+             )
+   elsif marker == EXPLORED_MARKER_ALLCLEAR
+      pm.add('command',
+             'label'     => "Delete Exploration Marker",
+             'command'   => proc { deleteAllClearMarker area}
+             )
+   elsif marker == EXPLORED_MARKER_TEMP
+      pm.add('command',
+             'label'     => "Delete Temp Marker",
+             'command'   => proc { deleteTempMarker area}
              )
    end
    pm.post(x.to_i,y.to_i)
@@ -2650,6 +2718,8 @@ def initVars
    $myGameInfoText.value = "A L A M A Z E"
    $currentOpenFile=nil
    $exploredAreas = Array.new
+   $noUSAreas = Array.new
+   $allClearAreas = Array.new
    $exploreDialog = nil
    $menuDialog = nil
    $emmyDialog.destroy if TkWinfo.exist?($emmyDialog)

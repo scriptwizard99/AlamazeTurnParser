@@ -25,6 +25,7 @@ cp *.rb *.rbw $zipDestDir
 cp -r graphics $zipDestDir
 cp -r docs $zipDestDir
 cp -r data $zipDestDir
+cp -r lib $zipDestDir
 
 
 

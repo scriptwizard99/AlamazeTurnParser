@@ -28,6 +28,7 @@ require_relative 'lib/regions'
 require_relative 'lib/emmyTool'
 require_relative 'lib/emmyToolWindow'
 require_relative 'lib/exploredDialog'
+require_relative 'lib/unusualSighting'
 require_relative 'lib/alamazeTurnParser'
 #require 'win32/sound'
 #include Win32
@@ -160,6 +161,7 @@ $emissaryList = nil
 $popCenterList= nil
 $groupList= nil
 $artifactList = nil
+$unusualSightings = nil
 
 $boldFont = TkFont.new( "weight" => "bold")
 
@@ -1781,6 +1783,8 @@ def addSizedMarker(size,x,y,marker,markerText,loc,banner)
       m = drawNoUS(size,x,y,loc)
    elsif marker == EXPLORED_MARKER_ALLCLEAR
       m = drawAllClear(size,x,y,loc)
+   elsif marker == EXPLORED_MARKER_US
+      m = $unusualSightings.drawUnusualSighting(size,x,y,loc)
    elsif marker == EXPLORED_MARKER_TEMP
       m = drawTempMarker(size,x,y,loc)
    else
@@ -1790,8 +1794,11 @@ def addSizedMarker(size,x,y,marker,markerText,loc,banner)
 
    m.bind('1', proc { boxClick loc } )
    m.bind('3', proc { |x,y| rightClickMarker(x,y,loc,marker) }, "%X %Y" )
-   t.bind('1', proc { boxClick loc } ) if t != nil
-   t.bind('3', proc { |x,y| rightClickMarker(x,y,loc,marker) }, "%X %Y" ) if t != nil
+   
+   unless t.nil?
+      t.bind('1', proc { boxClick loc } ) 
+      t.bind('3', proc { |x,y| rightClickMarker(x,y,loc,marker) }, "%X %Y" ) 
+   end
 end
 
 
@@ -2724,6 +2731,7 @@ def initVars
    $menuDialog = nil
    $emmyDialog.destroy if TkWinfo.exist?($emmyDialog)
    $emmyDialog = nil
+   $unusualSightings = UnSightingInfo.new
    setupImage
 end
 

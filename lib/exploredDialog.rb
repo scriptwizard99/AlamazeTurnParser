@@ -24,12 +24,14 @@ EXPLORED_MARKER_NOPC='X'
 EXPLORED_MARKER_NOUS='@'
 EXPLORED_MARKER_ALLCLEAR='!'
 EXPLORED_MARKER_TEMP=4
+EXPLORED_MARKER_US='U'
 
 $explorationMarkerMap = {
-   "NoPC" => EXPLORED_MARKER_NOPC,
-   "NoUS" => EXPLORED_MARKER_NOUS,
+   "NoPC"     => EXPLORED_MARKER_NOPC,
+   "NoUS"     => EXPLORED_MARKER_NOUS,
    "AllClear" => EXPLORED_MARKER_ALLCLEAR,
-   "Temp" => EXPLORED_MARKER_TEMP
+   "US"       => EXPLORED_MARKER_US,
+   "Temp"     => EXPLORED_MARKER_TEMP
 }
 
 
@@ -51,6 +53,8 @@ def markExploredFromLB(lb, typeLB)
          $noUSAreas.push area.strip
       when EXPLORED_MARKER_ALLCLEAR
          $allClearAreas.push area.strip
+      when EXPLORED_MARKER_US
+         $unusualSightings.markUS(area)
       end
       addMapMarker(area,marker)
    end
@@ -161,11 +165,11 @@ def createExplorationMarkerTypeBox(frame)
     lb = TkListbox.new(frame) {
              selectmode 'single'
              width 10
-             height 4
+             height 5
              pack('side'=>'top')
     }
 
-    %w(NoPC NoUS AllClear Temp).each do |mtype|
+    %w(NoPC NoUS AllClear US Temp).each do |mtype|
        lb.insert('end', mtype)
     end
 

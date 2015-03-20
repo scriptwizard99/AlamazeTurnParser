@@ -52,6 +52,7 @@ class AlamazeTurnParser
   SECTION_EYES_ONLY=20
   SECTION_VICTORY_CONDITIONS=21
   SECTION_ESO=22
+  SECTION_RECON_ENCOUNTERS=23
 
   @section=0
   @banner="xxxxxxx"
@@ -129,6 +130,8 @@ class AlamazeTurnParser
         @section = SECTION_RECON_EMISSARIES
      elsif ( string.upcase.include? "*** ARTIFACTS: ***")
         @section = SECTION_RECON_ARTIFACTS
+     elsif ( string.upcase.include? "*** ENCOUNTERS: ***")
+        @section = SECTION_RECON_ENCOUNTERS
      elsif ( string.upcase.include? "IN MEMORIUM")
         @section = SECTION_DEAD_ROYALS
      elsif ( string.include? "Political Events and Status of the Realm")

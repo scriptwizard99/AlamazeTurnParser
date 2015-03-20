@@ -1,5 +1,10 @@
 Release Notes for the Alamaze Turn Parser
 
+Version 1.4.0 - in progress
+--------------------------------------------------------------------------------
+- Added region borders to the map
+- Fixed parser crash caused by recons of US
+
 Version 1.3.0
 --------------------------------------------------------------------------------
 - Can now add markers for No PC, No Unusual Sighting and All Clear.

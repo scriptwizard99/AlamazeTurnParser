@@ -47,6 +47,15 @@ class UnSightingInfo
    def addUS(line)
    end
 
+   def getUniqueTag(area)
+      return "US-#{area}"
+   end
+
+   def deleteUS(area)
+      @list[area]=nil
+      $canvas.delete( getUniqueTag(area) )
+   end
+
    def markUS(area)
       @list[area]=UnusualSighting.new(area)
    end
@@ -56,7 +65,7 @@ class UnSightingInfo
    end
 
    def drawUnusualSighting(size,x,y,loc)
-     uniqueTag="US-#{loc}"
+     uniqueTag=getUniqueTag(loc)
      img = TkcImage.new($canvas,x,y, 'image' => @images[size], :tags => ['UnusualSighting', 'Marker', $offsets[size][:tag], uniqueTag ])
      return img
    end

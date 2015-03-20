@@ -1865,6 +1865,16 @@ def enterNewOwner(entry, area)
    $canvas.raise($currentTopTag)
 end
 
+def deleteUSMarker(area)
+   us = $unusualSightings.getUS(area)
+   if us == nil 
+      Tk::messageBox :message => "There is no Unusual Sighting center at area  #{area}"
+      return
+   end
+   $unusualSightings.deleteUS(area)
+   $canvas.raise($currentTopTag)
+end
+
 def destroyPC(area)
    pc = $popCenterList.getPopCenter(area)
    if pc == nil 
@@ -1947,8 +1957,13 @@ def rightClickMarker(x,y,area,marker)
              'command'   => proc { changePCOwner area}
              )
       pm.add('command',
-             'label'     => "Destory PC",
+             'label'     => "Destroy PC",
              'command'   => proc { destroyPC area}
+             )
+   elsif marker == EXPLORED_MARKER_US
+      pm.add('command',
+             'label'     => "Delete Unusual Sighting",
+             'command'   => proc { deleteUSMarker area}
              )
    elsif marker == EXPLORED_MARKER_NOPC
       pm.add('command',

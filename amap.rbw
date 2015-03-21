@@ -1865,6 +1865,10 @@ def enterNewOwner(entry, area)
    $canvas.raise($currentTopTag)
 end
 
+def editUnusualSighting(area)
+   $unusualSightings.drawEditDialog(area)
+end
+
 def deleteUSMarker(area)
    us = $unusualSightings.getUS(area)
    if us == nil 
@@ -1961,6 +1965,10 @@ def rightClickMarker(x,y,area,marker)
              'command'   => proc { destroyPC area}
              )
    elsif marker == EXPLORED_MARKER_US
+      pm.add('command',
+             'label'     => "Edit Unusual Sighting",
+             'command'   => proc { editUnusualSighting area}
+             )
       pm.add('command',
              'label'     => "Delete Unusual Sighting",
              'command'   => proc { deleteUSMarker area}

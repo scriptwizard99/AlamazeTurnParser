@@ -63,19 +63,92 @@ class UnSightingInfo
    def getUS(area)
       return @list[area]
    end
-
+ 
    def drawUnusualSighting(size,x,y,loc)
      uniqueTag=getUniqueTag(loc)
      img = TkcImage.new($canvas,x,y, 'image' => @images[size], :tags => ['UnusualSighting', 'Marker', $offsets[size][:tag], uniqueTag ])
      return img
    end
 
+
+   def drawEditDialog(area)
+      us = getUS(area)
+      if us == nil
+         Tk::messageBox :message => "There is no unusual sighting at area  #{area}"
+         return
+      end
+
+      $editUSDialog.destroy if TkWinfo.exist?($editUSDialog)
+      $editUSDialog = TkToplevel.new($root) do
+         title "Edit Unusual Sighting at #{area}"
+      end
+
+      frame = TkFrame.new($editUSDialog) do
+         relief 'sunken'
+         borderwidth 3
+         background 'yellow'
+         padx 10
+         pady 10
+      end
+   
+      difEntry  = addDialogRow(frame, "Difficulty", us.getDifficulty )
+      descEntry = addDialogRow(frame, "Description", us.getDescription )
+
+      TkButton.new(frame) do
+         text "Apply"
+         command (proc{ $unusualSightings.updateUS(area,difEntry,descEntry)})
+         pack('fill' =>'both', 'expand' => 1)
+      end
+
+      frame.pack
+
+   end
+
+   def addDialogRow(frame, label, value)
+      rowFrame = TkFrame.new(frame)
+
+      TkLabel.new(rowFrame) do
+         text "#{label} : "
+         pack('side'=>'left')
+      end
+      entry = TkEntry.new(rowFrame) do
+         width '30'
+         pack('side'=>'left', 'fill' =>'x', 'expand' => 1)
+      end
+      entry.insert('end', value)
+      rowFrame.pack('fill' =>'x', 'expand' => 1)
+      return entry
+   end
+
+
+   def updateUS(area, difEntry, descEntry)
+      difficulty = difEntry.get.strip.upcase.gsub(',','_')
+      description = descEntry.get.gsub(',','_')
+      appendText("entered #{difficulty} #{description} for US at #{area}\n")
+      @list[area].update(difficulty,description)
+      $editUSDialog.destroy if TkWinfo.exist?($editUSDialog)
+   end
+
+
 end # class UnSightingInfo
 
 
 class UnusualSighting
-   def initialize(loc, difficulty=nil)
+   def initialize(loc, difficulty=nil, description=nil)
        @loc = loc
        @difficulty=difficulty
+       @description=description
+   end
+
+   def getDescription
+      return @description
+   end
+   def getDifficulty
+      return @difficulty
+   end
+
+   def update(difficulty, description)
+       @difficulty=difficulty
+       @description=description
    end
 end # class UnusualSighting

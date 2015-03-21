@@ -1,9 +1,10 @@
 Release Notes for the Alamaze Turn Parser
 
-Version 1.4.0 - in progress
+Version 1.4.0 
 --------------------------------------------------------------------------------
 - Added region borders to the map
 - Fixed parser crash caused by recons of US
+- Added support for adding Unusual Sightings to the map via the Exploration dialog.
 
 Version 1.3.0
 --------------------------------------------------------------------------------

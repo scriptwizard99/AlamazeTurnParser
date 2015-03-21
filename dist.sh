@@ -18,8 +18,8 @@ mkdir -p $zipDestDir
 
 echo "Building dist files for version $version"
 
-mv parseTurn.exe $distDir/parseTurn-${version}.exe
-mv amap.exe      $distDir/turnParser-${version}.exe
+mv parseTurn.exe $distDir/parserCommand-${version}.exe
+mv amap.exe      $distDir/parserGUI-${version}.exe
 
 cp *.rb *.rbw $zipDestDir
 cp -r graphics $zipDestDir

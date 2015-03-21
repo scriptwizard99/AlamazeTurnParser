@@ -28,6 +28,7 @@ require_relative 'lib/regions'
 require_relative 'lib/emmyTool'
 require_relative 'lib/emmyToolWindow'
 require_relative 'lib/exploredDialog'
+require_relative 'lib/unusualSighting'
 require_relative 'lib/alamazeTurnParser'
 #require 'win32/sound'
 #include Win32
@@ -160,6 +161,7 @@ $emissaryList = nil
 $popCenterList= nil
 $groupList= nil
 $artifactList = nil
+$unusualSightings = nil
 
 $boldFont = TkFont.new( "weight" => "bold")
 
@@ -1261,6 +1263,11 @@ def addInfoData(line)
    $infoData.push line
 end
 
+def addUnusualSighting(line)
+   us = $unusualSightings.addUS(line)
+   addMapMarker(us.getLocation,EXPLORED_MARKER_US)
+end
+
 # [@turnNumber,"P",p['source'],area,p['banner'],p['name'],p['type'],p['defense'],p['census'],p['food'],p['gold'],p['other']].join(',')
 def addPopCenter(line)
  pop = $popCenterList.addPopCenter(line)
@@ -1367,6 +1374,22 @@ def showEmHeader
    $emissaryList.showEmHeader
    #appendText("Trn Source  Area KI          Name               Rank\n")
    #appendText("--- ------- ---- -- ------------------------- ---------\n")
+end
+
+def showUnusualSightings(area,showHeader)
+   if showHeader == true
+      appendTextWithTag("\nUnusual Sightings? :\n", TEXT_TAG_TITLE)
+   end
+
+   us=$unusualSightings.getUS(area)
+   if us.nil?
+      appendText("\nSorry")
+   else
+      appendText("\nYES, there is an Unusual Sighting here!\n")
+      appendText("Difficulty:  #{us.getDifficulty}\n")
+      appendText("Description:  #{us.getDescription}\n")
+   end
+
 end
 
 def showEmissary(area,target,showHeader,targetTurn)
@@ -1580,6 +1603,8 @@ def loadDocument(filename)
         addNoUSAreas(line)
      when EXPLORED_MARKER_ALLCLEAR
         addAllClearAreas(line)
+     when EXPLORED_MARKER_US
+        addUnusualSighting(line)
      else
         appendTextWithTag("Unknown record type=#{recordType}\n", TEXT_TAG_DANGER)
      end
@@ -1685,6 +1710,7 @@ def saveDocument(filename)
    $groupList.saveDataToFile(ofile)
    $artifactList.saveDataToFile(ofile)
    $regionList.saveDataToFile(ofile)
+   $unusualSightings.saveDataToFile(ofile)
 
    record = [$currentTurn, EXPLORED_MARKER_NOPC, $exploredAreas].join(',')
    ofile.puts record
@@ -1744,18 +1770,6 @@ def getCenter(loc)
    return [x,y]
 end
 
-# Puts a single lettera to one of the boxes
-#def addMapMarkerOLD(loc,marker)
-   #coords =  @MAP[loc].configinfo('coords')
-   #x= coords[4][0] + BOX_HEIGHT/2
-   #y= coords[4][1] + BOX_WIDTH/2
-#   (x,y)=getCenter(loc)
-   #t = TkcText.new($canvas, x, y, 'text' => marker, 'tags' => [marker,loc, 'Marker', "m-#{loc}", "m-#{marker}"], 
-#   t = TkcText.new($canvas, x, y, 'text' => marker, 'tags' => [marker,loc, 'Marker'], 
-#                   'fill' => 'black', 'font' => $boldFont )
-#   t.bind('1', proc { boxClick loc } )
-   #t.addTag(loc)
-#end
 
 def addSizedMarker(size,x,y,marker,markerText,loc,banner)
 
@@ -1781,6 +1795,8 @@ def addSizedMarker(size,x,y,marker,markerText,loc,banner)
       m = drawNoUS(size,x,y,loc)
    elsif marker == EXPLORED_MARKER_ALLCLEAR
       m = drawAllClear(size,x,y,loc)
+   elsif marker == EXPLORED_MARKER_US
+      m = $unusualSightings.drawUnusualSighting(size,x,y,loc)
    elsif marker == EXPLORED_MARKER_TEMP
       m = drawTempMarker(size,x,y,loc)
    else
@@ -1790,8 +1806,11 @@ def addSizedMarker(size,x,y,marker,markerText,loc,banner)
 
    m.bind('1', proc { boxClick loc } )
    m.bind('3', proc { |x,y| rightClickMarker(x,y,loc,marker) }, "%X %Y" )
-   t.bind('1', proc { boxClick loc } ) if t != nil
-   t.bind('3', proc { |x,y| rightClickMarker(x,y,loc,marker) }, "%X %Y" ) if t != nil
+   
+   unless t.nil?
+      t.bind('1', proc { boxClick loc } ) 
+      t.bind('3', proc { |x,y| rightClickMarker(x,y,loc,marker) }, "%X %Y" ) 
+   end
 end
 
 
@@ -1842,6 +1861,7 @@ def boxClick(loc)
    showPopCenter(loc, true)
    showEmissary(loc, nil, true, nil)
    showArmyGroup(loc, nil, true, nil)
+   showUnusualSightings(loc,true)
    $textBox.focus
 
 end
@@ -1855,6 +1875,20 @@ def enterNewOwner(entry, area)
       return
    end
    $popCenterList.changeOwner(area,text)
+   $canvas.raise($currentTopTag)
+end
+
+def editUnusualSighting(area)
+   $unusualSightings.drawEditDialog(area)
+end
+
+def deleteUSMarker(area)
+   us = $unusualSightings.getUS(area)
+   if us == nil 
+      Tk::messageBox :message => "There is no Unusual Sighting center at area  #{area}"
+      return
+   end
+   $unusualSightings.deleteUS(area)
    $canvas.raise($currentTopTag)
 end
 
@@ -1940,8 +1974,17 @@ def rightClickMarker(x,y,area,marker)
              'command'   => proc { changePCOwner area}
              )
       pm.add('command',
-             'label'     => "Destory PC",
+             'label'     => "Destroy PC",
              'command'   => proc { destroyPC area}
+             )
+   elsif marker == EXPLORED_MARKER_US
+      pm.add('command',
+             'label'     => "Edit Unusual Sighting",
+             'command'   => proc { editUnusualSighting area}
+             )
+      pm.add('command',
+             'label'     => "Delete Unusual Sighting",
+             'command'   => proc { deleteUSMarker area}
              )
    elsif marker == EXPLORED_MARKER_NOPC
       pm.add('command',
@@ -2724,6 +2767,7 @@ def initVars
    $menuDialog = nil
    $emmyDialog.destroy if TkWinfo.exist?($emmyDialog)
    $emmyDialog = nil
+   $unusualSightings = UnSightingInfo.new
    setupImage
 end
 

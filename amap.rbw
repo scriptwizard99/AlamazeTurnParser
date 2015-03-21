@@ -1263,6 +1263,11 @@ def addInfoData(line)
    $infoData.push line
 end
 
+def addUnusualSighting(line)
+   us = $unusualSightings.addUS(line)
+   addMapMarker(us.getLocation,EXPLORED_MARKER_US)
+end
+
 # [@turnNumber,"P",p['source'],area,p['banner'],p['name'],p['type'],p['defense'],p['census'],p['food'],p['gold'],p['other']].join(',')
 def addPopCenter(line)
  pop = $popCenterList.addPopCenter(line)
@@ -1369,6 +1374,22 @@ def showEmHeader
    $emissaryList.showEmHeader
    #appendText("Trn Source  Area KI          Name               Rank\n")
    #appendText("--- ------- ---- -- ------------------------- ---------\n")
+end
+
+def showUnusualSightings(area,showHeader)
+   if showHeader == true
+      appendTextWithTag("\nUnusual Sightings? :\n", TEXT_TAG_TITLE)
+   end
+
+   us=$unusualSightings.getUS(area)
+   if us.nil?
+      appendText("\nSorry")
+   else
+      appendText("\nYES, there is an Unusual Sighting here!\n")
+      appendText("Difficulty:  #{us.getDifficulty}\n")
+      appendText("Description:  #{us.getDescription}\n")
+   end
+
 end
 
 def showEmissary(area,target,showHeader,targetTurn)
@@ -1582,6 +1603,8 @@ def loadDocument(filename)
         addNoUSAreas(line)
      when EXPLORED_MARKER_ALLCLEAR
         addAllClearAreas(line)
+     when EXPLORED_MARKER_US
+        addUnusualSighting(line)
      else
         appendTextWithTag("Unknown record type=#{recordType}\n", TEXT_TAG_DANGER)
      end
@@ -1687,6 +1710,7 @@ def saveDocument(filename)
    $groupList.saveDataToFile(ofile)
    $artifactList.saveDataToFile(ofile)
    $regionList.saveDataToFile(ofile)
+   $unusualSightings.saveDataToFile(ofile)
 
    record = [$currentTurn, EXPLORED_MARKER_NOPC, $exploredAreas].join(',')
    ofile.puts record
@@ -1746,18 +1770,6 @@ def getCenter(loc)
    return [x,y]
 end
 
-# Puts a single lettera to one of the boxes
-#def addMapMarkerOLD(loc,marker)
-   #coords =  @MAP[loc].configinfo('coords')
-   #x= coords[4][0] + BOX_HEIGHT/2
-   #y= coords[4][1] + BOX_WIDTH/2
-#   (x,y)=getCenter(loc)
-   #t = TkcText.new($canvas, x, y, 'text' => marker, 'tags' => [marker,loc, 'Marker', "m-#{loc}", "m-#{marker}"], 
-#   t = TkcText.new($canvas, x, y, 'text' => marker, 'tags' => [marker,loc, 'Marker'], 
-#                   'fill' => 'black', 'font' => $boldFont )
-#   t.bind('1', proc { boxClick loc } )
-   #t.addTag(loc)
-#end
 
 def addSizedMarker(size,x,y,marker,markerText,loc,banner)
 
@@ -1849,6 +1861,7 @@ def boxClick(loc)
    showPopCenter(loc, true)
    showEmissary(loc, nil, true, nil)
    showArmyGroup(loc, nil, true, nil)
+   showUnusualSightings(loc,true)
    $textBox.focus
 
 end

@@ -45,6 +45,9 @@ class UnSightingInfo
 #  end
 
    def addUS(line)
+      (turn,junk,area,diff,desc)=line.split(',')
+      @list[area]=UnusualSighting.new(area,diff,desc)
+      return @list[area]
    end
 
    def getUniqueTag(area)
@@ -129,6 +132,12 @@ class UnSightingInfo
       $editUSDialog.destroy if TkWinfo.exist?($editUSDialog)
    end
 
+   def saveDataToFile(ofile)
+      @list.keys.each do |key|
+            @list[key].saveDataToFile(ofile)
+      end
+   end
+
 
 end # class UnSightingInfo
 
@@ -140,9 +149,14 @@ class UnusualSighting
        @description=description
    end
 
+   def getLocation
+      return @loc
+   end
+
    def getDescription
       return @description
    end
+
    def getDifficulty
       return @difficulty
    end
@@ -151,4 +165,10 @@ class UnusualSighting
        @difficulty=difficulty
        @description=description
    end
+
+   def saveDataToFile(ofile)
+      record=["0","U",@loc,@difficulty,@description].join(',')
+      ofile.puts record
+   end
+
 end # class UnusualSighting

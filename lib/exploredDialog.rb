@@ -75,9 +75,10 @@ end # enterAreas
 
 def createAddExploredDialog
    unHighlight
+   showExplored
    $exploreDialog.destroy if TkWinfo.exist?($exploreDialog)
    $exploreDialog = TkToplevel.new($root) do
-      title 'Where I Have Gone Before'
+      title 'Exploration Markers'
    end
    frame = TkFrame.new($exploreDialog) do
       relief 'sunken'

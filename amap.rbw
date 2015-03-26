@@ -162,6 +162,7 @@ $popCenterList= nil
 $groupList= nil
 $artifactList = nil
 $unusualSightings = nil
+$toggles = nil
 
 $boldFont = TkFont.new( "weight" => "bold")
 
@@ -706,6 +707,7 @@ class GroupList
             appendTextWithTag(line, TEXT_TAG_STALE)
          end
       end
+      $canvas.raise($currentTopTag)
    end
 
 end # end class Group List
@@ -2055,12 +2057,22 @@ def setupMenus(root)
    map_menu.add('command',
                  'label'     => "Mark Explored...",
                  'command'   => proc { createAddExploredDialog },
-                 'underline' => 5)
+                 'underline' => 0)
    
    map_menu.add('command',
                  'label'     => "Fix Regions",
                  'command'   => proc { fixRegions },
-                 'underline' => 4)
+                 'underline' => 0)
+   
+   map_menu.add('command',
+                 'label'     => "Toggle Explored",
+                 'command'   => proc { toggleExplored },
+                 'underline' => 7)
+   
+   map_menu.add('command',
+                 'label'     => "Toggle Groups",
+                 'command'   => proc { toggleGroups },
+                 'underline' => 7)
    
    menu_bar.add('cascade',
                 'menu'  => map_menu,
@@ -2361,6 +2373,53 @@ def tagText(textBox,pattern,tag)
       textBox.mark_set("matchEnd", "#{index} wordend")
       textBox.tag_add(tag,"matchStart", "matchEnd")
    end
+end
+
+def hideExplored
+  return if $toggles[:explored] == false
+  $canvas.delete('NoPC')
+  $canvas.delete('NoUS')
+  $canvas.delete('AllClear')
+  $canvas.delete('Temp')
+  $toggles[:explored] = false
+  $canvas.raise($currentTopTag)
+end
+
+def showExplored
+   return if $toggles[:explored] == true
+   $exploredAreas.each do |area|
+      addMapMarker(area,EXPLORED_MARKER_NOPC)
+   end
+   $noUSAreas.each do |area|
+      addMapMarker(area,EXPLORED_MARKER_NOUS)
+   end
+   $allClearAreas.each do |area|
+      addMapMarker(area,EXPLORED_MARKER_ALLCLEAR)
+   end
+   $toggles[:explored] = true
+   $canvas.raise($currentTopTag)
+end
+
+def toggleExplored
+   unHighlight
+   if $toggles[:explored] == true
+      hideExplored
+   else
+      showExplored
+   end
+end
+
+
+def toggleGroups
+   unHighlight
+   if $toggles[:groups] == true
+      $canvas.delete('ARMY')
+      $toggles[:groups] = false
+   else
+      $groupList.showAllGroups
+      $toggles[:groups] = true
+   end
+   $canvas.raise($currentTopTag)
 end
 
 
@@ -2768,6 +2827,9 @@ def initVars
    $emmyDialog.destroy if TkWinfo.exist?($emmyDialog)
    $emmyDialog = nil
    $unusualSightings = UnSightingInfo.new
+   $toggles = Hash.new
+   $toggles[:explored]=true
+   $toggles[:groups]=false
    setupImage
 end
 

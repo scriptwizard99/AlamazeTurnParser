@@ -9,7 +9,7 @@ fi
 version=$1
 
 distDir='dist'
-zipDestDir=$distDir/turnParser
+zipDestDir=$distDir/turnParserBundle
 
 echo "First cleaning out dist dir"
 rm -rf $distDir

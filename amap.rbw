@@ -472,7 +472,7 @@ class PopCenterList
       @list[area].destroyPC
       $canvas.raise($currentTopTag)
    end
-
+   
    def fixRegions
       appendText("Fixing Regions.\n\n")
       numUpdated=0
@@ -2061,6 +2061,11 @@ def setupMenus(root)
                  'underline' => 0)
    
    map_menu.add('command',
+                 'label'     => "Group Movement Plotter...",
+                 'command'   => proc { startGroupMovementPlotter },
+                 'underline' => 6)
+   
+   map_menu.add('command',
                  'label'     => "Fix Regions",
                  'command'   => proc { fixRegions },
                  'underline' => 0)
@@ -2421,6 +2426,11 @@ def toggleGroups
       $toggles[:groups] = true
    end
    $canvas.raise($currentTopTag)
+end
+
+def startGroupMovementPlotter
+   $gm=GroupMovementPlotter.new()
+   $gm.createDialog
 end
 
 
@@ -2862,9 +2872,6 @@ begin
    
    tweakVolume
 
-   #drawCurvyLine(['KK','KL','LM', 'MM', 'NM','NL','NK', 'OK','PL', 'PK', 'QL','QK'])
-   $gm=GroupMovementPlotter.new()
-   $gm.createDialog
    
    Tk.mainloop
 rescue Exception => e

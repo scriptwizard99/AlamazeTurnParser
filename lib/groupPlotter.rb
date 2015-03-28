@@ -23,6 +23,13 @@
 
 class GroupMovementPlotter
 
+   def initialize
+      @entry=nil
+      @undoButton=nil
+      @areaLabel=nil
+      @areaList=Array.new
+   end
+
    def createDialog
       $gmPlotter.destroy if TkWinfo.exist?($gmPlotter)
       $gmPlotter = TkToplevel.new($root) do
@@ -213,7 +220,7 @@ class GroupMovementPlotter
    end
 
    def addArea(direction)
-      #appendText("moving #{direction}\n")
+      return if @areaList.nil? or @areaList.empty?
       newArea = getAdjacentArea( @areaList.last, direction)
       @areaList.push(newArea)
       updateAreaListLabel
@@ -221,7 +228,7 @@ class GroupMovementPlotter
    end
   
    def undoLastArea()
-      #appendText("undo last area")
+      return if @areaList.nil? or @areaList.empty?
       @areaList.pop unless @areaList.size < 2
       updateAreaListLabel
       drawCurvyLine("#{@gname}-Arrow", @areaList)

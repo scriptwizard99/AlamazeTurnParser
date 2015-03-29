@@ -4,6 +4,7 @@ Version 1.5.0
 --------------------------------------------------------------------------------
 - Added item to the Map menu allowing you to toggle the exploration markers on and off
 - Added item to the Map menu allowing you to toggle showing groups on and off
+- Added the Group Movement Plotter (720) tool. 
 
 
 Version 1.4.0 

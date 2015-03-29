@@ -28,6 +28,7 @@ require_relative 'lib/regions'
 require_relative 'lib/emmyTool'
 require_relative 'lib/emmyToolWindow'
 require_relative 'lib/exploredDialog'
+require_relative 'lib/groupPlotter'
 require_relative 'lib/unusualSighting'
 require_relative 'lib/alamazeTurnParser'
 #require 'win32/sound'
@@ -471,7 +472,7 @@ class PopCenterList
       @list[area].destroyPC
       $canvas.raise($currentTopTag)
    end
-
+   
    def fixRegions
       appendText("Fixing Regions.\n\n")
       numUpdated=0
@@ -1762,11 +1763,11 @@ def clearText(tb=nil)
    tb.delete(1.0,'end')
 end
 
-def getCenter(loc)
+def getCenter(loc, size=:small)
    return if loc == nil or loc.empty?
    yPart = loc[0].ord - 'A'.ord
    xPart = loc[1].ord - 'A'.ord
-   size = :small
+   #size = :small
    x = $offsets[size][:frameX] + ($offsets[size][:boxX]*xPart) + $offsets[size][:boxX]/2.0
    y = $offsets[size][:frameY] + ($offsets[size][:boxY]*yPart) + $offsets[size][:boxY]/2.0
    return [x,y]
@@ -2058,6 +2059,11 @@ def setupMenus(root)
                  'label'     => "Mark Explored...",
                  'command'   => proc { createAddExploredDialog },
                  'underline' => 0)
+   
+   map_menu.add('command',
+                 'label'     => "Group Movement Plotter...",
+                 'command'   => proc { startGroupMovementPlotter },
+                 'underline' => 6)
    
    map_menu.add('command',
                  'label'     => "Fix Regions",
@@ -2422,6 +2428,11 @@ def toggleGroups
    $canvas.raise($currentTopTag)
 end
 
+def startGroupMovementPlotter
+   $gm=GroupMovementPlotter.new()
+   $gm.createDialog
+end
+
 
 def fixRegions
    clearText
@@ -2644,6 +2655,8 @@ def initOffsets
    $offsets[:big][:boxY]=60.45
    $offsets[:big][:tag]='big'
    $offsets[:big][:font]= TkFont.new( "size" => '30', "weight" => "bold")
+   $offsets[:big][:thickLine]=12
+   $offsets[:big][:thinLine]=7
    $offsets[:small] = Hash.new
    $offsets[:small][:frameX]=17
    $offsets[:small][:frameY]=14
@@ -2652,6 +2665,8 @@ def initOffsets
    $offsets[:small][:tag]='small'
    #$offsets[:small][:font]= TkFont.new( "size" => '17', "weight" => "bold")
    $offsets[:small][:font]= TkFont.new( "size" => '10' )
+   $offsets[:small][:thickLine]=7
+   $offsets[:small][:thinLine]=3
 end
 
 def drawAnArmy(size,x,y,id,color)
@@ -2826,6 +2841,7 @@ def initVars
    $menuDialog = nil
    $emmyDialog.destroy if TkWinfo.exist?($emmyDialog)
    $emmyDialog = nil
+   $gmPlotter = nil
    $unusualSightings = UnSightingInfo.new
    $toggles = Hash.new
    $toggles[:explored]=true

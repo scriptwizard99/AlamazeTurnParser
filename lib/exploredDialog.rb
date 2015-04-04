@@ -40,11 +40,16 @@ def markExploredFromLB(lb, typeLB)
 
    # Get Marker Type
    mt = typeLB.get( typeLB.curselection )
-   appendText("Adding marker type [#{mt}]\n")
+   
    marker = $explorationMarkerMap[mt]
 
    # Add Markers
    areaList = lb.get(0,'end')
+   appendText("Adding marker type [#{mt}]\n")
+   if areaList.empty?
+      appendText("ERROR: no areas entered. Did you forget to hit Enter?\n")
+      return
+   end
    areaList.each do |area|
       case marker
       when EXPLORED_MARKER_NOPC

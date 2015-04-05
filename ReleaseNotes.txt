@@ -1,11 +1,16 @@
 Release Notes for the Alamaze Turn Parser
 
+Version x.x.x
+--------------------------------------------------------------------------------
+- Fixed issue #19. Now the tool will warn you that you have done nothing.
+- When parsing/loading a turn from some other kingdom, the info and regional 
+  reaction records will be ignored. 
+
 Version 1.5.0
 --------------------------------------------------------------------------------
 - Added item to the Map menu allowing you to toggle the exploration markers on and off
 - Added item to the Map menu allowing you to toggle showing groups on and off
 - Added the Group Movement Plotter (720) tool. 
-
 
 Version 1.4.0 
 --------------------------------------------------------------------------------

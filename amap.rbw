@@ -1248,12 +1248,14 @@ end
 
 # [@turnNumber,"I",@gameNumber,@banner].join(',')
 def addInfoData(line)
+   isAnOtherKingdom = false
    (turn,x,gameNumber,banner,influence)=line.split(',')
    if( $gameNumber == nil )
       $gameNumber = gameNumber 
    else
       appendTextWithTag("WARNING! This file appears to be from game #{gameNumber} instead of #{$gameNumber}\n",
                          TEXT_TAG_WARNING) if $gameNumber != gameNumber
+      isAnOtherKingdom = true
    end
 
    if( $myKingdom == nil )
@@ -1261,9 +1263,15 @@ def addInfoData(line)
    else
       appendTextWithTag("WARNING! This file contains data from the #{banner} turn instead of #{$myKingdom}\n",
                          TEXT_TAG_WARNING) if $myKingdom != banner.strip
+      isAnOtherKingdom = true
    end
-   $influence[turn.to_i]=influence
-   $infoData.push line
+
+   unless isAnOtherKingdom
+      $influence[turn.to_i]=influence
+      $infoData.push line
+   end
+
+   return isAnOtherKingdom
 end
 
 def addUnusualSighting(line)
@@ -1580,7 +1588,11 @@ def showPopCentersByRegion
 end
 
 def loadDocument(filename)
-  #clearText
+
+  # Start off assuming the file is for this kingdom
+  # The return code from addInfoData may change that.
+  isAnOtherKingdom = false 
+
   appendText("Loading data from #{filename}\n")
   IO.foreach(filename) { |line|
      appendTextWithTag("Data file contains warnings.\n",TEXT_TAG_WARNING) if line.match(/WARNING/)
@@ -1589,7 +1601,7 @@ def loadDocument(filename)
      (turn,recordType,rest)=line.split(',',3)
      case recordType
      when 'I'
-        addInfoData(line)
+        isAnOtherKingdom = addInfoData(line)
      when 'P'
         addPopCenter(line)
      when 'E'
@@ -1599,7 +1611,11 @@ def loadDocument(filename)
      when 'A'
         addArtifact(line)
      when 'R'
-        addRegion(line)
+        if isAnOtherKingdom
+           appendTextWithTag("Ignoring: #{line.strip}.\n",TEXT_TAG_STALE)
+        else
+           addRegion(line) 
+        end
      when EXPLORED_MARKER_NOPC
         addExploredAreas(line)
      when EXPLORED_MARKER_NOUS

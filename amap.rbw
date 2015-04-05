@@ -1250,20 +1250,19 @@ end
 def addInfoData(line)
    isAnOtherKingdom = false
    (turn,x,gameNumber,banner,influence)=line.split(',')
-   if( $gameNumber == nil )
-      $gameNumber = gameNumber 
-   else
+   $gameNumber = gameNumber if( $gameNumber == nil )
+   if ($gameNumber != gameNumber )
       appendTextWithTag("WARNING! This file appears to be from game #{gameNumber} instead of #{$gameNumber}\n",
-                         TEXT_TAG_WARNING) if $gameNumber != gameNumber
+                         TEXT_TAG_WARNING) 
       isAnOtherKingdom = true
    end
 
+   banner.strip!
+   $myKingdom = banner if( $myKingdom == nil )
    if( $myKingdom == nil )
-      $myKingdom = banner.strip 
-   else
       appendTextWithTag("WARNING! This file contains data from the #{banner} turn instead of #{$myKingdom}\n",
-                         TEXT_TAG_WARNING) if $myKingdom != banner.strip
-      isAnOtherKingdom = true
+                         TEXT_TAG_WARNING) 
+      isAnOtherKingdom = true 
    end
 
    unless isAnOtherKingdom

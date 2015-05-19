@@ -72,6 +72,7 @@ def enterAreas(entry,rightListBox)
    areaList = entryText.upcase.split(/\W/)
    areaList.each do |area|
       #next if area.size != 2
+      next if area.empty?
       rightListBox.insert('end',area)
       highlightTag("box-#{area}", false)
    end

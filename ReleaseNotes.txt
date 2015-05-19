@@ -5,6 +5,9 @@ Version x.x.x
 - Fixed issue #19. Now the tool will warn you that you have done nothing.
 - When parsing/loading a turn from some other kingdom, the info and regional 
   reaction records will be ignored. 
+- When pasting the movement orders from your turn into the Exploration dialog,
+  the blank spaces are ignored. Previously, they were generating dozens of null 
+  entries. You did not notice, though, unless you looked in the data file.
 
 Version 1.5.0
 --------------------------------------------------------------------------------

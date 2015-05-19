@@ -1259,7 +1259,7 @@ def addInfoData(line)
 
    banner.strip!
    $myKingdom = banner if( $myKingdom == nil )
-   if( $myKingdom == nil )
+   if( $myKingdom != banner )
       appendTextWithTag("WARNING! This file contains data from the #{banner} turn instead of #{$myKingdom}\n",
                          TEXT_TAG_WARNING) 
       isAnOtherKingdom = true 

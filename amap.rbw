@@ -29,6 +29,7 @@ require_relative 'lib/emmyTool'
 require_relative 'lib/emmyToolWindow'
 require_relative 'lib/exploredDialog'
 require_relative 'lib/groupPlotter'
+require_relative 'lib/manualEntry'
 require_relative 'lib/unusualSighting'
 require_relative 'lib/alamazeTurnParser'
 #require 'win32/sound'
@@ -252,6 +253,15 @@ class Area
    end
    def getGroupList
       return @groupList.keys.sort
+   end
+
+   def Area.isLocValid(loc)
+      return false if loc.size != 2
+      uloc = loc.upcase
+      uloc.each_char do |char|
+         return false if char < 'A' or char > 'Z'
+      end
+      return true
    end
 end # class Area
 
@@ -992,6 +1002,45 @@ class Emissary
               ofile.puts record
       end
    end # save data to file
+
+   # more of 'acceptable' vs 'valid'
+   def Emissary.isValidRank(rank)
+      appendText("Validating rank=[#{rank}]\n")
+      case rank[0..3].upcase
+      when "BAR"
+         return true
+      when "DUK"
+         return true
+      when "DUC"
+         return true
+      when "GOV"
+         return true
+      when "PRO"
+         return true
+      when "AMB"
+         return true
+      when "ENV"
+         return true
+      when "PRI"
+         return true
+      when "DEM"
+         return true
+      when "COU"
+         return true
+      when "KIN"
+         return true
+      when "REG"
+         return true
+      when "CON"
+         return true
+      when "AGE"
+         return true
+      when "FAN"
+         return true
+      else
+         return false
+      end
+   end
 end # class Emissary
 
 #--------------------------------------------------------------------------
@@ -2076,6 +2125,11 @@ def setupMenus(root)
                  'underline' => 0)
    
    map_menu.add('command',
+                 'label'     => "Manual Entry...",
+                 'command'   => proc { startManualEntryDialog },
+                 'underline' => 2)
+   
+   map_menu.add('command',
                  'label'     => "Group Movement Plotter...",
                  'command'   => proc { startGroupMovementPlotter },
                  'underline' => 6)
@@ -2441,6 +2495,11 @@ def toggleGroups
       $toggles[:groups] = true
    end
    $canvas.raise($currentTopTag)
+end
+
+def startManualEntryDialog
+   dialog=ManualEntry.new()
+   dialog.createDialog
 end
 
 def startGroupMovementPlotter
@@ -2857,6 +2916,8 @@ def initVars
    $emmyDialog.destroy if TkWinfo.exist?($emmyDialog)
    $emmyDialog = nil
    $gmPlotter = nil
+   $manualEntry.destroy if TkWinfo.exist?($manualEntry)
+   $manualEntry = nil
    $unusualSightings = UnSightingInfo.new
    $toggles = Hash.new
    $toggles[:explored]=true

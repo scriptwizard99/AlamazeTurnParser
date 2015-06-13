@@ -65,6 +65,7 @@ class AlamazeTurnParser
   @regionInfo=Hash.new
   @tempGroupInfo=nil
   @tempArtifactInfo=nil
+  @htmlVersion=nil
 
   # EVERY kingdom except the Red Dragon is abbreviated
   # by the first two letters of their name. But the 
@@ -90,6 +91,9 @@ class AlamazeTurnParser
   def checkSection(string)
      if( string.include? "Production collected this month" )
         @section = SECTION_CUR_PRODUCTION
+     elsif ( string.include? "DOCTYPE html" )
+        @format = FORMAT_HTML
+        @section = SECTION_PREAMBLE
      elsif ( string.include? "ACCT #:" )
         @section = SECTION_PREAMBLE
      elsif ( string.include? "Our forecast for next month" )
@@ -155,13 +159,15 @@ class AlamazeTurnParser
         # Go ahead and parse out @banner
         #puts "[01234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789]"
         #printf("[%s]\n",string)
-        if ( string.include? ">")
-           md=string.match(/>\s+(\w+.*)\s+Regional Summary/)
-           banner=md[1].upcase
-        else
-           (banner,x,x)=string.split
+        if @format == FORMAT_PDF
+           if ( string.include? ">")
+              md=string.match(/>\s+(\w+.*)\s+Regional Summary/)
+              banner=md[1].upcase
+           else
+              (banner,x,x)=string.split
+           end
+           @banner=fixBanner(banner[0,2])
         end
-        @banner=fixBanner(banner[0,2])
         @section = SECTION_REGIONAL_SUMMARY
      else
         return false
@@ -226,11 +232,24 @@ class AlamazeTurnParser
   # All we need from the first part of the turn results
   # is the turn number
   def processPreamble(line)
-     if line.include? "TURN #"
-        (x,x,@turnNumber)=line.split
+     if ( md=line.match(/--\s+Version\s+(\S+)\s+/) )
+        @htmlVersion=md[1]
      end
-     if line.include? "GAME #"
-        (x,x,@gameNumber)=line.split
+
+     if ( md=line.match(/<title>(\S+)<.title>/) )
+       info=md[1].match(/(\D+)(\d+)R(\d+)/)
+       @banner=info[1]
+       @gameNumber=info[2]
+       @turnNumber=info[3]
+     end
+
+     if @format == FORMAT_PDF
+        if line.include? "TURN #"
+           (x,x,@turnNumber)=line.split
+        end
+        if line.include? "GAME #"
+           (x,x,@gameNumber)=line.split
+        end
      end
   end
 

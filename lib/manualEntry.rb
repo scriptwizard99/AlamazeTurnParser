@@ -188,6 +188,7 @@ class ManualEntry
       addColoredMapMarker(loc, detail[0], banner, nil)
       fixRegions
       $canvas.raise($currentTopTag)
+      appendTextWithTag("Added #{banner} #{detail} named #{name} at #{loc}\n",TEXT_TAG_GOOD)
    end
 
    def addEmissaryEntry(type,loc,banner,name,detail)
@@ -203,6 +204,7 @@ class ManualEntry
       name="#{banner}-#{detail}" if name.nil? or name.empty?
       line="#{$currentTurn},E,Manual,#{loc},#{banner},#{name},#{detail}"
       addEmissary(line)
+      appendTextWithTag("Added #{banner} #{detail} named #{name} at #{loc}\n",TEXT_TAG_GOOD)
    end
 
    def addGroupEntry(type,loc,banner,name,detail)
@@ -215,6 +217,7 @@ class ManualEntry
       addArmyGroup(line)
       addColoredMapMarker(loc, 'A', banner, name[0])
       $canvas.raise($currentTopTag)
+      appendTextWithTag("Added #{name} of size #{detail} at #{loc}\n",TEXT_TAG_GOOD)
    end
 
 end # class ManualEntry

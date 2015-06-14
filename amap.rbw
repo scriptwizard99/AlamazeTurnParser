@@ -660,7 +660,6 @@ class PopCenter
     end
    # more of 'acceptable' vs 'valid'
    def PopCenter.isValidType(pcType)
-      appendText("Validating pcType=[#{pcType}]\n")
       case pcType[0..2].upcase
       when "CIT"
          return true
@@ -845,9 +844,7 @@ class Group
    end # save data to file
 
    def Group.isValid(banner,name)
-      appendText("Group: checking #{banner} and #{name}\n")
       return false if banner != name[1..2]
-      #return false unless (1..4).member?(name[0])
       return true
    end
 
@@ -1026,7 +1023,6 @@ class Emissary
 
    # more of 'acceptable' vs 'valid'
    def Emissary.isValidRank(rank)
-      appendText("Validating rank=[#{rank}]\n")
       case rank[0..2].upcase
       when "BAR"
          return true

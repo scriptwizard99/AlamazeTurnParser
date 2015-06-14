@@ -29,6 +29,7 @@ require_relative 'lib/emmyTool'
 require_relative 'lib/emmyToolWindow'
 require_relative 'lib/exploredDialog'
 require_relative 'lib/groupPlotter'
+require_relative 'lib/manualEntry'
 require_relative 'lib/unusualSighting'
 require_relative 'lib/alamazeTurnParser'
 #require 'win32/sound'
@@ -252,6 +253,15 @@ class Area
    end
    def getGroupList
       return @groupList.keys.sort
+   end
+
+   def Area.isLocValid(loc)
+      return false if loc.size != 2
+      uloc = loc.upcase
+      uloc.each_char do |char|
+         return false if char < 'A' or char > 'Z'
+      end
+      return true
    end
 end # class Area
 
@@ -648,6 +658,19 @@ class PopCenter
          ofile.puts record
       end
     end
+   # more of 'acceptable' vs 'valid'
+   def PopCenter.isValidType(pcType)
+      case pcType[0..2].upcase
+      when "CIT"
+         return true
+      when "TOW"
+         return true
+      when "VIL"
+         return true
+      else
+         return false
+      end
+   end
 end # end class Popcenter
 
 #--------------------------------------------------------------------------
@@ -819,6 +842,11 @@ class Group
             ofile.puts record
       end
    end # save data to file
+
+   def Group.isValid(banner,name)
+      return false if banner != name[1..2]
+      return true
+   end
 
 end # end class Group
 
@@ -992,6 +1020,44 @@ class Emissary
               ofile.puts record
       end
    end # save data to file
+
+   # more of 'acceptable' vs 'valid'
+   def Emissary.isValidRank(rank)
+      case rank[0..2].upcase
+      when "BAR"
+         return true
+      when "DUK"
+         return true
+      when "DUC"
+         return true
+      when "GOV"
+         return true
+      when "PRO"
+         return true
+      when "AMB"
+         return true
+      when "ENV"
+         return true
+      when "PRI"
+         return true
+      when "DEM"
+         return true
+      when "COU"
+         return true
+      when "KIN"
+         return true
+      when "REG"
+         return true
+      when "CON"
+         return true
+      when "AGE"
+         return true
+      when "FAN"
+         return true
+      else
+         return false
+      end
+   end
 end # class Emissary
 
 #--------------------------------------------------------------------------
@@ -1357,7 +1423,7 @@ end
 # Turn,Record Type,Data Source,Map Location,Kingdom,Name,size,archers,foot,horse,leader1,leader2,leader3,wizard1,wizard2,wizard3
 def addArmyGroup(line)
  $groupList.addGroup(line)
- (turn,x,source,area,banner,name,size,archers,foot,horse,l1,l2,l3,w1,w2,w3)=line.split(',')
+ (turn,x,source,area,banner,name,region,size,archers,foot,horse,l1,l2,l3,w1,w2,w3)=line.split(',')
  $kingdoms[banner]=1
  $armies[name]=banner
  $areaList.addtag(area,"banner-#{banner}")
@@ -2076,6 +2142,11 @@ def setupMenus(root)
                  'underline' => 0)
    
    map_menu.add('command',
+                 'label'     => "Manual Entry...",
+                 'command'   => proc { startManualEntryDialog },
+                 'underline' => 2)
+   
+   map_menu.add('command',
                  'label'     => "Group Movement Plotter...",
                  'command'   => proc { startGroupMovementPlotter },
                  'underline' => 6)
@@ -2443,6 +2514,11 @@ def toggleGroups
    $canvas.raise($currentTopTag)
 end
 
+def startManualEntryDialog
+   dialog=ManualEntry.new()
+   dialog.createDialog
+end
+
 def startGroupMovementPlotter
    $gm=GroupMovementPlotter.new()
    $gm.createDialog
@@ -2451,7 +2527,7 @@ end
 
 def fixRegions
    clearText
-   $regionList.readRegionBorderFile
+   $regionList.readRegionBorderFile 
    $popCenterList.fixRegions
 end
 
@@ -2857,6 +2933,8 @@ def initVars
    $emmyDialog.destroy if TkWinfo.exist?($emmyDialog)
    $emmyDialog = nil
    $gmPlotter = nil
+   $manualEntry.destroy if TkWinfo.exist?($manualEntry)
+   $manualEntry = nil
    $unusualSightings = UnSightingInfo.new
    $toggles = Hash.new
    $toggles[:explored]=true

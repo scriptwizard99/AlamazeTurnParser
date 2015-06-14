@@ -51,10 +51,12 @@ class RegionList
       $regionMap.keys.each do |regNum|
          @list[regNum] = Region.new( regNum,  $regionMap[regNum] )
       end
+      @regionLocMap=nil
       #readRegionBorderFile
    end
 
    def readRegionBorderFile
+      return unless @regionLocMap.nil?
       appendText("Reading region border information from #{REGION_INFO_FILE}\n")
       @regionLocMap=Hash.new
       IO.foreach(REGION_INFO_FILE) do |line|

@@ -142,10 +142,7 @@ class ManualEntry
 
       case type.to_i
       when ENTRY_TYPE_EMISSARY
-         if Emisary.isValidRank(detail) != true
-            appendText("#{detail} is not an acceptable emissary rank. Entry ignored.\n")
-            return
-         end
+         addEmissaryEntry(type,loc,banner,detail)
       when ENTRY_TYPE_POPCENTER
          addPopCenterEntry(type,loc,banner,detail)
       else
@@ -169,11 +166,24 @@ class ManualEntry
       end
 
       line="#{$currentTurn},P,Manual,#{loc},#{banner},#{detail}-#{loc},,#{detail},,,,,na"
-      appendText("Creating: #{line}\n")
       addPopCenter(line)
       addColoredMapMarker(loc, detail[0], banner, nil)
       fixRegions
       $canvas.raise($currentTopTag)
+   end
+
+   def addEmissaryEntry(type,loc,banner,detail)
+      if Emissary.isValidRank(detail) != true
+         appendText("#{detail} is not an acceptable emissary rank. Entry ignored.\n")
+         return
+      end
+      pc=$popCenterList.getPopCenter(loc) 
+      if pc.nil?
+         appendTextWithTag("Error, there is no pop center at #{loc}\n",TEXT_TAG_DANGER)
+         return
+      end
+      line="#{$currentTurn},E,Manual,#{loc},#{banner},#{banner}-#{detail},#{detail}"
+      addEmissary(line)
    end
 
 end # class ManualEntry

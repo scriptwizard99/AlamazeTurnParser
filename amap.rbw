@@ -1020,7 +1020,7 @@ class Emissary
    # more of 'acceptable' vs 'valid'
    def Emissary.isValidRank(rank)
       appendText("Validating rank=[#{rank}]\n")
-      case rank[0..3].upcase
+      case rank[0..2].upcase
       when "BAR"
          return true
       when "DUK"

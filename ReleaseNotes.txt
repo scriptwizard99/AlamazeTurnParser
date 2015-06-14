@@ -1,5 +1,10 @@
 Release Notes for the Alamaze Turn Parser
 
+Version 1.7.0
+--------------------------------------------------------------------------------
+- Added dialog allowing users to enter population centers, emissaries, and 
+  groups manually.
+
 Version 1.6.0
 --------------------------------------------------------------------------------
 - Now properly parses html turn results version 1.0b

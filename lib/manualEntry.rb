@@ -133,21 +133,25 @@ class ManualEntry
       frame.pack('fill' => 'both', 'expand' => 1)
    end # createDialog
 
+   def showError(msg)
+      clearText
+      appendTextWithTag(msg, TEXT_TAG_DANGER)
+   end
+
    def applyEntry
       type = $manualEntryType.value
       loc = @locEntry.get.strip.upcase
       banner = @bannerEntry.get.strip.upcase
       name = @nameEntry.get.strip.upcase
       detail = @detailEntry.get.strip.upcase
-      appendText("apply type=#{type} loc=#{loc} ban=#{banner} det=#{detail}\n")
 
       if Area.isLocValid(loc) != true
-         appendText("#{loc} is not a valid map location. Entry ignored.\n")
+         showError("#{loc} is not a valid map location. Entry ignored.\n")
          return
       end
 
       if $kingdomNameMap[banner].nil?
-         appendText("#{banner} is not a valid kingdom abbreviation location. Entry ignored.\n")
+         showError("#{banner} is not a valid kingdom abbreviation location. Entry ignored.\n")
          return
       end
 
@@ -159,26 +163,27 @@ class ManualEntry
       when ENTRY_TYPE_GROUP
          addGroupEntry(type,loc,banner,name,detail)
       else
-         appendText("Unknown entry type: #{type}\n")
+         showError("Unknown entry type: #{type}\n")
       end
    end
 
    def addPopCenterEntry(type,loc,banner,name,detail)
       if PopCenter.isValidType(detail) != true
-         appendText("#{detail} is not an acceptable population center type. Entry ignored.\n")
+         showError("#{detail} is not an acceptable population center type. Entry ignored.\n")
          return
       end
 
       pc=$popCenterList.getPopCenter(loc) 
       if pc != nil
-         appendTextWithTag("Error, there is already a pop center at #{loc}\n",TEXT_TAG_DANGER)
+         showError("Error, there is already a pop center at #{loc}\n")
          $popCenterList.printHeader
          line = pc.toString(nil)
          appendTextWithTag(line,TEXT_TAG_DANGER)
          return
       end
 
-      line="#{$currentTurn},P,Manual,#{loc},#{banner},#{detail}-#{loc},,#{detail},,,,,na"
+      name="#{detail}-#{loc}" if name.nil? or name.empty?
+      line="#{$currentTurn},P,Manual,#{loc},#{banner},#{name},,#{detail},,,,,na"
       addPopCenter(line)
       addColoredMapMarker(loc, detail[0], banner, nil)
       fixRegions
@@ -187,21 +192,22 @@ class ManualEntry
 
    def addEmissaryEntry(type,loc,banner,name,detail)
       if Emissary.isValidRank(detail) != true
-         appendText("#{detail} is not an acceptable emissary rank. Entry ignored.\n")
+         showError("#{detail} is not an acceptable emissary rank. Entry ignored.\n")
          return
       end
       pc=$popCenterList.getPopCenter(loc) 
       if pc.nil?
-         appendTextWithTag("Error, there is no pop center at #{loc}\n",TEXT_TAG_DANGER)
+         showError("Error, there is no pop center at #{loc}\n")
          return
       end
-      line="#{$currentTurn},E,Manual,#{loc},#{banner},#{banner}-#{detail},#{detail}"
+      name="#{banner}-#{detail}" if name.nil? or name.empty?
+      line="#{$currentTurn},E,Manual,#{loc},#{banner},#{name},#{detail}"
       addEmissary(line)
    end
 
    def addGroupEntry(type,loc,banner,name,detail)
       if Group.isValid(banner,name) != true
-         appendText("#{name} is not an acceptable name for a #{banner} group. Entry ignored.\n")
+         showError("#{name} is not an acceptable name for a #{banner} group. Entry ignored.\n")
          return
       end
 

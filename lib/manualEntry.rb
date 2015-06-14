@@ -147,20 +147,33 @@ class ManualEntry
             return
          end
       when ENTRY_TYPE_POPCENTER
-         if PopCenter.isValidType(detail) != true
-            appendText("#{detail} is not an acceptable population center type. Entry ignored.\n")
-            return
-         end
-         line="#{$currentTurn},P,Manual,#{loc},#{banner},#{detail}-#{loc},,#{detail},,,,,na"
-         appendText("Creating: #{line}\n")
-         #$popCenterList.addPopCenter(line)
-         addPopCenter(line)
-         addColoredMapMarker(loc, detail[0], banner, nil)
-         fixRegions
-         $canvas.raise($currentTopTag)
+         addPopCenterEntry(type,loc,banner,detail)
       else
-         appendText("Unknown type: #{type}\n")
+         appendText("Unknown entry type: #{type}\n")
       end
+   end
+
+   def addPopCenterEntry(type,loc,banner,detail)
+      if PopCenter.isValidType(detail) != true
+         appendText("#{detail} is not an acceptable population center type. Entry ignored.\n")
+         return
+      end
+
+      pc=$popCenterList.getPopCenter(loc) 
+      if pc != nil
+         appendTextWithTag("Error, there is already a pop center at #{loc}\n",TEXT_TAG_DANGER)
+         $popCenterList.printHeader
+         line = pc.toString(nil)
+         appendTextWithTag(line,TEXT_TAG_DANGER)
+         return
+      end
+
+      line="#{$currentTurn},P,Manual,#{loc},#{banner},#{detail}-#{loc},,#{detail},,,,,na"
+      appendText("Creating: #{line}\n")
+      addPopCenter(line)
+      addColoredMapMarker(loc, detail[0], banner, nil)
+      fixRegions
+      $canvas.raise($currentTopTag)
    end
 
 end # class ManualEntry

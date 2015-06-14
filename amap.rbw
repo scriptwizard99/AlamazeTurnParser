@@ -658,6 +658,20 @@ class PopCenter
          ofile.puts record
       end
     end
+   # more of 'acceptable' vs 'valid'
+   def PopCenter.isValidType(pcType)
+      appendText("Validating pcType=[#{pcType}]\n")
+      case pcType[0..2].upcase
+      when "CIT"
+         return true
+      when "TOW"
+         return true
+      when "VIL"
+         return true
+      else
+         return false
+      end
+   end
 end # end class Popcenter
 
 #--------------------------------------------------------------------------
@@ -2510,7 +2524,7 @@ end
 
 def fixRegions
    clearText
-   $regionList.readRegionBorderFile
+   $regionList.readRegionBorderFile 
    $popCenterList.fixRegions
 end
 

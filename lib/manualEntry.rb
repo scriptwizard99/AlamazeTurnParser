@@ -140,12 +140,26 @@ class ManualEntry
          return
       end
 
-      case type
+      case type.to_i
       when ENTRY_TYPE_EMISSARY
          if Emisary.isValidRank(detail) != true
             appendText("#{detail} is not an acceptable emissary rank. Entry ignored.\n")
             return
          end
+      when ENTRY_TYPE_POPCENTER
+         if PopCenter.isValidType(detail) != true
+            appendText("#{detail} is not an acceptable population center type. Entry ignored.\n")
+            return
+         end
+         line="#{$currentTurn},P,Manual,#{loc},#{banner},#{detail}-#{loc},,#{detail},,,,,na"
+         appendText("Creating: #{line}\n")
+         #$popCenterList.addPopCenter(line)
+         addPopCenter(line)
+         addColoredMapMarker(loc, detail[0], banner, nil)
+         fixRegions
+         $canvas.raise($currentTopTag)
+      else
+         appendText("Unknown type: #{type}\n")
       end
    end
 

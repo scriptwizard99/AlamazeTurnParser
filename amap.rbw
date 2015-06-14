@@ -844,6 +844,13 @@ class Group
       end
    end # save data to file
 
+   def Group.isValid(banner,name)
+      appendText("Group: checking #{banner} and #{name}\n")
+      return false if banner != name[1..2]
+      #return false unless (1..4).member?(name[0])
+      return true
+   end
+
 end # end class Group
 
 #--------------------------------------------------------------------------
@@ -1420,7 +1427,7 @@ end
 # Turn,Record Type,Data Source,Map Location,Kingdom,Name,size,archers,foot,horse,leader1,leader2,leader3,wizard1,wizard2,wizard3
 def addArmyGroup(line)
  $groupList.addGroup(line)
- (turn,x,source,area,banner,name,size,archers,foot,horse,l1,l2,l3,w1,w2,w3)=line.split(',')
+ (turn,x,source,area,banner,name,region,size,archers,foot,horse,l1,l2,l3,w1,w2,w3)=line.split(',')
  $kingdoms[banner]=1
  $armies[name]=banner
  $areaList.addtag(area,"banner-#{banner}")

@@ -99,6 +99,16 @@ class ManualEntry
       end
 
 
+      # Name
+      TkLabel.new(midFrame) do 
+         text "Name: "
+         pack('side'=>'left')
+      end
+      @nameEntry=TkEntry.new(midFrame) do
+         width 10
+         pack('side'=>'left', 'fill' =>'x', 'expand' => 0)
+      end
+
       # Type/Rank/Size
       TkLabel.new(midFrame) do 
          text "Type\nor\nRank : \nor\nSize"
@@ -127,6 +137,7 @@ class ManualEntry
       type = $manualEntryType.value
       loc = @locEntry.get.strip.upcase
       banner = @bannerEntry.get.strip.upcase
+      name = @nameEntry.get.strip.upcase
       detail = @detailEntry.get.strip.upcase
       appendText("apply type=#{type} loc=#{loc} ban=#{banner} det=#{detail}\n")
 
@@ -142,15 +153,17 @@ class ManualEntry
 
       case type.to_i
       when ENTRY_TYPE_EMISSARY
-         addEmissaryEntry(type,loc,banner,detail)
+         addEmissaryEntry(type,loc,banner,name,detail)
       when ENTRY_TYPE_POPCENTER
-         addPopCenterEntry(type,loc,banner,detail)
+         addPopCenterEntry(type,loc,banner,name,detail)
+      when ENTRY_TYPE_GROUP
+         addGroupEntry(type,loc,banner,name,detail)
       else
          appendText("Unknown entry type: #{type}\n")
       end
    end
 
-   def addPopCenterEntry(type,loc,banner,detail)
+   def addPopCenterEntry(type,loc,banner,name,detail)
       if PopCenter.isValidType(detail) != true
          appendText("#{detail} is not an acceptable population center type. Entry ignored.\n")
          return
@@ -172,7 +185,7 @@ class ManualEntry
       $canvas.raise($currentTopTag)
    end
 
-   def addEmissaryEntry(type,loc,banner,detail)
+   def addEmissaryEntry(type,loc,banner,name,detail)
       if Emissary.isValidRank(detail) != true
          appendText("#{detail} is not an acceptable emissary rank. Entry ignored.\n")
          return
@@ -184,6 +197,18 @@ class ManualEntry
       end
       line="#{$currentTurn},E,Manual,#{loc},#{banner},#{banner}-#{detail},#{detail}"
       addEmissary(line)
+   end
+
+   def addGroupEntry(type,loc,banner,name,detail)
+      if Group.isValid(banner,name) != true
+         appendText("#{name} is not an acceptable name for a #{banner} group. Entry ignored.\n")
+         return
+      end
+
+      line="#{$currentTurn},G,Manual,#{loc},#{banner},#{name},,#{detail},,,,,,,,,"
+      addArmyGroup(line)
+      addColoredMapMarker(loc, 'A', banner, name[0])
+      $canvas.raise($currentTopTag)
    end
 
 end # class ManualEntry

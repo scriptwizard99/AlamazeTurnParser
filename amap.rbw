@@ -451,8 +451,11 @@ class PopCenterList
       lostPopCenters = Array.new
       lastTurn = $currentTurn.to_i - 1
       @list.each do |area,popCenter|
+         #appendText("area[#{area}] lastOwner[#{popCenter.getOwnerByTurn("#{lastTurn}")}] curOwner[#{popCenter.getOwnerByTurn($currentTurn)}] myKingdom[#{$myKingdom}]\n")
          if popCenter.getOwnerByTurn("#{lastTurn}") == $myKingdom
+            #appendText("- owned last turn\n")
             if popCenter.getOwnerByTurn($currentTurn) != $myKingdom
+               #appendText("- not owned now\n")
                lostPopCenters.push area
             end
          end
@@ -510,6 +513,23 @@ class PopCenterList
       appendText("\nUpdated #{numUpdated} population centers.\n")
       appendText("Do not forget to save!\n") if numUpdated > 0
    end # end fixRegions
+
+   def checkOwners(ownedString)
+      return if ownedString.nil?
+      ownedList=ownedString.split(',')
+
+      potentialList=Array.new
+      getByLatestKingdom($myKingdom).each do |popCenter|
+         potentialList.push popCenter.getArea
+      end
+
+      lostPCs= potentialList - ownedList
+      #appendText("potential[#{potentialList}]\nowned[#{ownedList}]\nlost=[#{lostPCs}]\n")
+
+      lostPCs.each do |area|
+         changeOwner(area,"??")
+      end
+   end
 
 end # end class PopCenterList
 
@@ -1312,6 +1332,16 @@ def updateFilterLists
   updateLB($alb,$armies)
 end
 
+# go through the list of pop centers.
+# if the pop center is not in this list,
+# and the last known owner is me, set it neutral
+def checkPopCenterOwners(line)
+   return if line.nil?
+   (turn,x,banner,ownedList)=line.chomp.split(',',4)
+   #appendText("ownedList=[#{ownedList}]\n")
+   $popCenterList.checkOwners(ownedList)
+end
+
 # [@turnNumber,"I",@gameNumber,@banner].join(',')
 def addInfoData(line)
    isAnOtherKingdom = false
@@ -1657,6 +1687,7 @@ def loadDocument(filename)
   # Start off assuming the file is for this kingdom
   # The return code from addInfoData may change that.
   isAnOtherKingdom = false 
+  currentOwnersLine=nil
 
   appendText("Loading data from #{filename}\n")
   IO.foreach(filename) { |line|
@@ -1681,6 +1712,10 @@ def loadDocument(filename)
         else
            addRegion(line) 
         end
+     when 'O'
+        # We cannot process this line yet because $currentTurn 
+        # has not been increased yet. Save for later.
+        currentOwnersLine=line  
      when EXPLORED_MARKER_NOPC
         addExploredAreas(line)
      when EXPLORED_MARKER_NOUS
@@ -1700,6 +1735,7 @@ def loadDocument(filename)
   #playSound
   $currentTurn= $turns.keys.sort_by(&:to_i).last
   appendText("\nCurrent turn is #{$currentTurn}\n")
+  checkPopCenterOwners(currentOwnersLine) 
   $canvas.raise($currentTopTag)
 end
 
@@ -1746,6 +1782,7 @@ def runParser(filename,format=AlamazeTurnParser::FORMAT_HTML)
       parser.showArmies(ofile)
       parser.showArtifactInfo(ofile)
       parser.showRegionalInfo(ofile)
+      parser.showOwnedPopCenters(ofile)
       ofile.close
    rescue Exception => e
          appendText("Caught Exception.\n")

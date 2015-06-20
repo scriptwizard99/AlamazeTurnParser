@@ -72,6 +72,8 @@ begin
    parser.showArtifactInfo()
    puts
    parser.showRegionalInfo()
+   puts
+   parser.showOwnedPopCenters()
 
    logOut.puts "Parsing complete."
 

@@ -23,6 +23,7 @@
 require 'rubygems'
 require 'pdf/reader'
 
+
 class AlamazeTurnParser
 
   FORMAT_PDF=1
@@ -63,6 +64,7 @@ class AlamazeTurnParser
   @emissaryInfo=Hash.new
   @artifactInfo=Array.new
   @regionInfo=Hash.new
+  @ownedPopCenters=Array.new 
   @tempGroupInfo=nil
   @tempArtifactInfo=nil
   @htmlVersion=nil
@@ -189,9 +191,9 @@ class AlamazeTurnParser
      when SECTION_PREAMBLE
         processPreamble(string)
      when SECTION_CUR_PRODUCTION
-        collectProduction(string.upcase)
+        collectProduction(string.upcase,false)
      when SECTION_FORECAST_PRODUCTION
-        collectProduction(string.upcase)
+        collectProduction(string.upcase,true)
      when SECTION_RECON_GROUPS
         collectMilitaryRecon(string.upcase)
      when SECTION_RECON_POP
@@ -565,7 +567,7 @@ class AlamazeTurnParser
   # forecast values will overwrite current ones.
 #[01234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789]
 #[            3  AY  RUIN                TOWN     118005   63017   28277   46462    NA                                html
-  def collectProduction(line)
+  def collectProduction(line, isForecast)
      return if line.include? "---"
      return if line.include? "==="
      return if line.include? "CENSUS"
@@ -583,7 +585,6 @@ class AlamazeTurnParser
      @popCenterInfo=Hash.new if @popCenterInfo == nil
      @popCenterInfo[area]=Hash.new if @popCenterInfo[area] == nil
      @popCenterInfo[area]['region']=region
-     @popCenterInfo[area]['banner']=@banner if  @popCenterInfo[area]['banner'] == nil
      @popCenterInfo[area]['name']=name
      @popCenterInfo[area]['type']=type
      @popCenterInfo[area]['defense']=defense
@@ -592,6 +593,12 @@ class AlamazeTurnParser
      @popCenterInfo[area]['gold']=gold
      @popCenterInfo[area]['other']=other
      @popCenterInfo[area]['source']="Self"
+
+     if isForecast
+        @popCenterInfo[area]['banner']=@banner 
+        @ownedPopCenters=Array.new if @ownedPopCenters.nil?
+        @ownedPopCenters.push area
+     end
   end
 
   # Process the section of the recon status that covers population centers
@@ -934,5 +941,12 @@ class AlamazeTurnParser
         ofile.puts record
      }
   end
+
+  def showOwnedPopCenters(ofile=$stdout)
+     ofile.printf("Turn,Record Type,Kingdom,<comma separated pop center list>\n")
+     record=[@turnNumber,"O",@banner, @ownedPopCenters.join(',')  ].join(',')
+      ofile.puts record
+  end
+
 end
 

@@ -9,6 +9,7 @@
 *.err
 *.out
 dist/
+saves
 
 # sample data
 /sampleHTML/

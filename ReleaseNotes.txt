@@ -4,6 +4,7 @@ Version 1.7.0
 --------------------------------------------------------------------------------
 - Added dialog allowing users to enter population centers, emissaries, and 
   groups manually.
+- Is now much better at detecting lost population centers.
 
 Version 1.6.0
 --------------------------------------------------------------------------------

@@ -1339,7 +1339,7 @@ def checkPopCenterOwners(line)
    return if line.nil?
    (turn,x,banner,ownedList)=line.chomp.split(',',4)
    #appendText("ownedList=[#{ownedList}]\n")
-   $popCenterList.checkOwners(ownedList)
+   $popCenterList.checkOwners(ownedList) if banner == $myKingdom
 end
 
 # [@turnNumber,"I",@gameNumber,@banner].join(',')

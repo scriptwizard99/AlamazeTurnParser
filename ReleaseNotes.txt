@@ -1,5 +1,10 @@
 Release Notes for the Alamaze Turn Parser
 
+Version 1.7.1
+--------------------------------------------------------------------------------
+- Fixed bug where parsing the turn of another (presumablly allied) kingdom will 
+  mark all of yours as lost
+
 Version 1.7.0
 --------------------------------------------------------------------------------
 - Added dialog allowing users to enter population centers, emissaries, and 

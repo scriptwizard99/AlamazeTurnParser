@@ -1339,7 +1339,7 @@ def checkPopCenterOwners(line)
    return if line.nil?
    (turn,x,banner,ownedList)=line.chomp.split(',',4)
    #appendText("ownedList=[#{ownedList}]\n")
-   $popCenterList.checkOwners(ownedList) if banner == $myKingdom
+   $popCenterList.checkOwners(ownedList) 
 end
 
 # [@turnNumber,"I",@gameNumber,@banner].join(',')
@@ -1713,9 +1713,13 @@ def loadDocument(filename)
            addRegion(line) 
         end
      when 'O'
-        # We cannot process this line yet because $currentTurn 
-        # has not been increased yet. Save for later.
-        currentOwnersLine=line  
+        if isAnOtherKingdom
+           appendTextWithTag("Ignoring: #{line.strip}.\n",TEXT_TAG_STALE)
+        else
+           # We cannot process this line yet because $currentTurn 
+           # has not been increased yet. Save for later.
+           currentOwnersLine=line  
+        end
      when EXPLORED_MARKER_NOPC
         addExploredAreas(line)
      when EXPLORED_MARKER_NOUS

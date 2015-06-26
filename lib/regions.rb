@@ -92,25 +92,25 @@ class RegionList
          @list[region].addPC( pc.getType, pc.getLastKnownPopulation) unless @list[region] == nil
       end
    end
-   def addTurn(turn,num,reaction,controller)
+   def addTurn(turn,num,reaction,controller,refBanner=$myKingdom)
       if @list[num] == nil
          appendTextWithTag("Error: No region number[#{num}]\n",TEXT_TAG_DANGER)
          return
       end
-      @list[num].addTurn(turn,reaction,controller)
+      @list[num].addTurn(turn,reaction,controller,refBanner)
    end
    def printHeader
       appendTextWithTag("Region Name                            Cities Towns Villages   Estimated Population  Reaction   Current Controller  \n", TEXT_TAG_HEADING)
       appendTextWithTag("------ ------------------------------- ------ ----- --------   -------------------- ---------- ---------------------\n", TEXT_TAG_HEADING)
    end
-   def showAllStats
+   def showAllStats(refBanner=$myKingdom)
       clearText
       unHighlight
       appendTextWithTag("Region Statistics\n\n", TEXT_TAG_TITLE)
       printHeader
       @list.keys.each do |index|
          next if index.to_i < 1
-         appendText(@list[index].toString)
+         appendText(@list[index].toString(refBanner))
       end
       showRegionalLeaders
       tagText($textBox, "FRIENDLY", TEXT_TAG_GOOD)
@@ -158,13 +158,16 @@ class Region
       end
       @estimatedPopulation += pop.to_i
    end
-   def addTurn(turn,reaction,owner)
+   def addTurn(turn,reaction,owner,refBanner)
       if @turnInfo[turn] == nil
          @turnInfo[turn] = Hash.new
-         @turnInfo[turn][:reaction] = reaction
          @turnInfo[turn][:owner] = owner.strip
+      end
+      if @turnInfo[turn][:reaction] == nil
+         @turnInfo[turn][:reaction] = Hash.new
+         @turnInfo[turn][:reaction][refBanner] = reaction
       else
-         appendTextWithTag("WARNING: Region #{@name} already has info for turn #{turn}. Ignoring extra data \n",TEXT_TAG_WARNING) if $debug.to_i == 1
+         appendTextWithTag("WARNING: Region #{@name} already has info for turn #{turn} for #{refBanner}. Ignoring extra data \n",TEXT_TAG_WARNING) if $debug.to_i == 1
       end
    end
    def getName
@@ -181,23 +184,25 @@ class Region
       return nil if  lastTurn == nil or @turnInfo[lastTurn] == nil
       return  @turnInfo[lastTurn][:owner]
    end
-   def getLatestReaction
+   def getLatestReaction(refBanner=$myKingdom)
       lastTurn = getTurnList.last
       return nil if  lastTurn == nil or @turnInfo[lastTurn] == nil
-      return  @turnInfo[lastTurn][:reaction]
+      return  @turnInfo[lastTurn][:reaction][refBanner]
    end
-   def toString
+   def toString(refBanner=$myKingdom)
       lastTurn = getTurnList.last
       line = sprintf("  %2s    %-30s    %2d    %2d      %2d  %21d   %-10s  %s\n",
               @number, @name, @popCount[:city], @popCount[:town], @popCount[:village], @estimatedPopulation,
-              @turnInfo[lastTurn][:reaction], @turnInfo[lastTurn][:owner] )
+              @turnInfo[lastTurn][:reaction][refBanner], @turnInfo[lastTurn][:owner] )
       return line
    end
    def saveDataToFile(ofile)
       getTurnList.each do |turn|
          r=@turnInfo[turn]
-         record=[turn,"R",'Self',@name,@number,r[:reaction],r[:owner]].join(',')
-         ofile.puts record
+         r[:reaction].keys.each do |refBanner|
+            record=[turn,"R",'Self',@name,@number,r[:reaction][refBanner],r[:owner],refBanner].join(',')
+            ofile.puts record
+         end
       end
    end
 

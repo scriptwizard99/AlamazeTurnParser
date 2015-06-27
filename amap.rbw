@@ -1389,8 +1389,9 @@ end
 
 #[@turnNumber,"R",'Self',r[:name],regionNum,r[:reaction],r[:controller]].join(',')
 def addRegion(line)
-   (turn,x,x,name,num,reaction,controller)=line.split(',')
-   $regionList.addTurn(turn,num,reaction,controller)
+   (turn,x,x,name,num,reaction,controller,refBanner)=line.chomp.split(',')
+   appendText("#{line} -- refBanner=[#{refBanner}]\n")
+   $regionList.addTurn(turn,num,reaction,controller,refBanner)
 end
 
 #@turnNumber,"A",artifact[:source],artifact[:area],artifact[:fullName],artifact[:shortName],
@@ -1707,11 +1708,7 @@ def loadDocument(filename)
      when 'A'
         addArtifact(line)
      when 'R'
-        if isAnOtherKingdom
-           appendTextWithTag("Ignoring: #{line.strip}.\n",TEXT_TAG_STALE)
-        else
-           addRegion(line) 
-        end
+        addRegion(line) 
      when 'O'
         if isAnOtherKingdom
            appendTextWithTag("Ignoring: #{line.strip}.\n",TEXT_TAG_STALE)
@@ -1991,6 +1988,20 @@ def boxClick(loc)
 
 end
 
+def changeKingdom(entry)
+   text = entry.get.strip.upcase
+   appendText("So you want to be the #{text}\n")
+   $menuDialog.destroy if TkWinfo.exist?($menuDialog)
+   if $kingdomNameMap[text] == nil
+      Tk::messageBox :message => "#{text} is not a valid kingdom name"
+      return
+   end
+
+   $myKingdom = text
+   setInfoLabel
+
+end
+
 def enterNewOwner(entry, area)
    text = entry.get.strip.upcase
    appendText("entered #{text} for #{area}\n")
@@ -2026,6 +2037,37 @@ def destroyPC(area)
    $popCenterList.destroyPC(area)
    $canvas.raise($currentTopTag)
 end
+
+def changeMainKingdomDialog
+
+   unHighlight
+   $menuDialog.destroy if TkWinfo.exist?($menuDialog)
+   $menuDialog = TkToplevel.new($root) do
+      title "Change Kingdom"
+   end
+   frame = TkFrame.new($menuDialog) do
+      relief 'sunken'
+      borderwidth 3
+      background 'darkgrey'
+      padx 10
+      pady 10
+   end
+
+   TkLabel.new(frame) do
+      text 'Who do you want to be today?: '
+      pack('side'=>'left')
+   end
+
+   entry = TkEntry.new(frame) do
+      width '10'
+      pack('side'=>'left', 'fill' =>'x', 'expand' => 0)
+   end
+   entry.insert('end', $myKingdom )
+   entry.bind('Return', proc { changeKingdom(entry) } )
+   frame.pack
+
+end
+
 
 def changePCOwner(area)
    pc = $popCenterList.getPopCenter(area)
@@ -2205,6 +2247,11 @@ def setupMenus(root)
    map_menu.add('command',
                  'label'     => "Toggle Groups",
                  'command'   => proc { toggleGroups },
+                 'underline' => 7)
+   
+   map_menu.add('command',
+                 'label'     => "Change Kingdom",
+                 'command'   => proc { changeMainKingdomDialog },
                  'underline' => 7)
    
    menu_bar.add('cascade',

@@ -97,6 +97,7 @@ class RegionList
          appendTextWithTag("Error: No region number[#{num}]\n",TEXT_TAG_DANGER)
          return
       end
+      refBanner=$myKingdom if refBanner.nil? or refBanner.empty?
       @list[num].addTurn(turn,reaction,controller,refBanner)
    end
    def printHeader
@@ -161,10 +162,14 @@ class Region
    def addTurn(turn,reaction,owner,refBanner)
       if @turnInfo[turn] == nil
          @turnInfo[turn] = Hash.new
-         @turnInfo[turn][:owner] = owner.strip
       end
+      @turnInfo[turn][:owner] = owner.strip
+
       if @turnInfo[turn][:reaction] == nil
          @turnInfo[turn][:reaction] = Hash.new
+      end
+
+      if @turnInfo[turn][:reaction][refBanner] == nil
          @turnInfo[turn][:reaction][refBanner] = reaction
       else
          appendTextWithTag("WARNING: Region #{@name} already has info for turn #{turn} for #{refBanner}. Ignoring extra data \n",TEXT_TAG_WARNING) if $debug.to_i == 1

@@ -2185,6 +2185,7 @@ end
 
 def setupMenus(root)
 
+   menu_bar = TkMenu.new
    file_menu = TkMenu.new(root)
    
    file_menu.add('command',
@@ -2219,12 +2220,21 @@ def setupMenus(root)
                  'command'   => proc { exit 0} ,
                  'underline' => 3)
    
-   menu_bar = TkMenu.new
    menu_bar.add('cascade',
                 'menu'  => file_menu,
                 'label' => "File")
    
    map_menu = TkMenu.new(root)
+   map_menu.add('command',
+                 'label'     => "Zoom In",
+                 'command'   => proc { zoomIn },
+                 'underline' => 5)
+   
+   map_menu.add('command',
+                 'label'     => "Zoom Out",
+                 'command'   => proc { zoomOut },
+                 'underline' => 5)
+   
    map_menu.add('command',
                  'label'     => "Mark Explored...",
                  'command'   => proc { createAddExploredDialog },
@@ -2258,12 +2268,58 @@ def setupMenus(root)
    map_menu.add('command',
                  'label'     => "Change Kingdom",
                  'command'   => proc { changeMainKingdomDialog },
-                 'underline' => 7)
+                 'underline' => 0)
    
    menu_bar.add('cascade',
                 'menu'  => map_menu,
                 'label' => "Map")
 
+   report_menu = TkMenu.new(root)
+   report_menu.add('command',
+                   'label'     => "Region Stats",
+                   'command'   => proc { $regionList.showAllStats },
+                   'underline' => 0)
+
+   report_menu.add('command',
+                   'label'     => "All Groups",
+                   'command'   => proc { $groupList.showAllGroups },
+                   'underline' => 0)
+
+   report_menu.add('command',
+                   'label'     => "All Artifacts",
+                   'command'   => proc { showAllArtifacts },
+                   'underline' => 0)
+
+   report_menu.add('command',
+                   'label'     => "Production By Kingdom",
+                   'command'   => proc { showProductionStatsByKingdom },
+                   'underline' => 0)
+
+   report_menu.add('command',
+                   'label'     => "PopCenters By Region",
+                   'command'   => proc { showPopCentersByRegion },
+                   'underline' => 0)
+
+   report_menu.add('command',
+                   'label'     => "Threatened Production",
+                   'command'   => proc { showMyThreatenedProduction },
+                   'underline' => 0)
+
+   report_menu.add('command',
+                   'label'     => "Lost/Gained PopCenters",
+                   'command'   => proc { showPopCenterChanges },
+                   'underline' => 0)
+
+   report_menu.add('command',
+                   'label'     => "Lost/Hired Emissaries",
+                   'command'   => proc { showEmissaryChanges },
+                   'underline' => 0)
+
+
+   menu_bar.add('cascade',
+                'menu'  => report_menu,
+                'label' => "Reports")
+   
    root.menu(menu_bar)
 end
 
@@ -2470,46 +2526,7 @@ def createHistoryRadio(frame)
 end
 
 def createSearchButtons(frame)
-   TkButton.new(frame) do
-      text "Region Stats"
-      command (proc{$regionList.showAllStats})
-      pack
-   end
-   TkButton.new(frame) do
-      text "Show All Groups"
-      command (proc{$groupList.showAllGroups})
-      pack
-   end
-   TkButton.new(frame) do
-      text "All Artifacts"
-      command (proc{showAllArtifacts})
-      pack
-   end
-   TkButton.new(frame) do
-      text "Production By Kingdom"
-      command (proc{showProductionStatsByKingdom})
-      pack
-   end
-   TkButton.new(frame) do
-      text "Pop Centers By Region"
-      command (proc{showPopCentersByRegion})
-      pack
-   end
-   TkButton.new(frame) do
-      text "Threatened Production"
-      command (proc{showMyThreatenedProduction})
-      pack
-   end
-   TkButton.new(frame) do
-      text "Show Lost/Gained Pop Centers"
-      command (proc{showPopCenterChanges})
-      pack
-   end
-   TkButton.new(frame) do
-      text "Show Lost/Hired Emissaries"
-      command (proc{showEmissaryChanges})
-      pack
-   end
+# content removed
 end # end createSearchButtons
 
 def createSearchParts(frame)
@@ -2531,7 +2548,7 @@ def createSearchParts(frame)
       relief 'sunken'
       borderwidth 3
    end
-   createSearchButtons(buttonFrame)
+   #createSearchButtons(buttonFrame)
 
 
    filterFrame = TkFrame.new(frame) do

@@ -486,15 +486,15 @@ class PopCenterList
       $canvas.raise($currentTopTag)
    end
    
-   def fixRegions
-      appendText("Fixing Regions.\n\n")
+   def fixRegions(quiet=false)
+      appendText("Fixing Regions.\n\n") unless quiet
       numUpdated=0
       @list.each do |area,popCenter|
          needsFixin=false
          regNum = popCenter.getRegion
          newReg = $regionList.getRegionByArea(area)
          if regNum.nil? or regNum.empty? 
-            appendText("Updating popCenter at #{area} with region #{newReg}.\n")
+            appendText("Updating popCenter at #{area} with region #{newReg}.\n") unless quiet
             needsFixin=true
          elsif regNum != newReg
             # We cheat and use region number "X" to denote a destroyed PC
@@ -507,11 +507,11 @@ class PopCenterList
             numUpdated += 1
             popCenter.setRegion(newReg)
             addColoredMapMarker(area, popCenter.getType[0], popCenter.getLastKnownOwner, popCenter.getRegion)
-            highlightTag("box-#{area}",false)
+            highlightTag("box-#{area}",false) unless quiet
          end
       end
-      appendText("\nUpdated #{numUpdated} population centers.\n")
-      appendText("Do not forget to save!\n") if numUpdated > 0
+      appendText("\nUpdated #{numUpdated} population centers.\n") unless quiet
+      appendText("Do not forget to save!\n") if numUpdated > 0 and not quiet
    end # end fixRegions
 
    def checkOwners(ownedString)
@@ -1338,7 +1338,7 @@ end
 def checkPopCenterOwners(line)
    return if line.nil?
    (turn,x,banner,ownedList)=line.chomp.split(',',4)
-   #appendText("ownedList=[#{ownedList}]\n")
+   switchKingdoms(banner)
    $popCenterList.checkOwners(ownedList) 
 end
 
@@ -1390,7 +1390,6 @@ end
 #[@turnNumber,"R",'Self',r[:name],regionNum,r[:reaction],r[:controller]].join(',')
 def addRegion(line)
    (turn,x,x,name,num,reaction,controller,refBanner)=line.chomp.split(',')
-   appendText("#{line} -- refBanner=[#{refBanner}]\n")
    $regionList.addTurn(turn,num,reaction,controller,refBanner)
 end
 
@@ -1688,7 +1687,7 @@ def loadDocument(filename)
   # Start off assuming the file is for this kingdom
   # The return code from addInfoData may change that.
   isAnOtherKingdom = false 
-  currentOwnersLine=nil
+  currentOwnersLine=Array.new
 
   appendText("Loading data from #{filename}\n")
   IO.foreach(filename) { |line|
@@ -1710,13 +1709,9 @@ def loadDocument(filename)
      when 'R'
         addRegion(line) 
      when 'O'
-        if isAnOtherKingdom
-           appendTextWithTag("Ignoring: #{line.strip}.\n",TEXT_TAG_STALE)
-        else
-           # We cannot process this line yet because $currentTurn 
-           # has not been increased yet. Save for later.
-           currentOwnersLine=line  
-        end
+        # We cannot process this line yet because $currentTurn 
+        # has not been increased yet. Save for later.
+        currentOwnersLine.push line  
      when EXPLORED_MARKER_NOPC
         addExploredAreas(line)
      when EXPLORED_MARKER_NOUS
@@ -1731,13 +1726,22 @@ def loadDocument(filename)
   }
   updateFilterLists
   setInfoLabel
+  fixRegions(true)
   $popCenterList.addMarkers
   $regionList.gatherStats
   #playSound
   $currentTurn= $turns.keys.sort_by(&:to_i).last
   appendText("\nCurrent turn is #{$currentTurn}\n")
-  checkPopCenterOwners(currentOwnersLine) 
+  currentOwnersLine.each do |oline|
+     checkPopCenterOwners(oline) 
+  end
   $canvas.raise($currentTopTag)
+end
+
+def switchKingdoms(newBanner)
+  appendText("Switching kingdoms to #{newBanner}\n")
+  $myKingdom = newBanner
+  setInfoLabel
 end
 
 def openDocument
@@ -1997,9 +2001,7 @@ def changeKingdom(entry)
       return
    end
 
-   $myKingdom = text
-   setInfoLabel
-
+   switchKingdoms(text)
 end
 
 def enterNewOwner(entry, area)
@@ -2613,10 +2615,10 @@ def startGroupMovementPlotter
 end
 
 
-def fixRegions
-   clearText
+def fixRegions(quiet=false)
+   clearText unless quiet
    $regionList.readRegionBorderFile 
-   $popCenterList.fixRegions
+   $popCenterList.fixRegions(quiet)
 end
 
 def createTextWindow

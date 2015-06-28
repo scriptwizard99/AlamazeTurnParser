@@ -1344,29 +1344,31 @@ end
 
 # [@turnNumber,"I",@gameNumber,@banner].join(',')
 def addInfoData(line)
-   isAnOtherKingdom = false
+   isAnOtherGame = false
    (turn,x,gameNumber,banner,influence)=line.split(',')
    $gameNumber = gameNumber if( $gameNumber == nil )
    if ($gameNumber != gameNumber )
       appendTextWithTag("WARNING! This file appears to be from game #{gameNumber} instead of #{$gameNumber}\n",
                          TEXT_TAG_WARNING) 
-      isAnOtherKingdom = true
+      isAnOtherGame = true
    end
 
    banner.strip!
-   $myKingdom = banner if( $myKingdom == nil )
-   if( $myKingdom != banner )
-      appendTextWithTag("WARNING! This file contains data from the #{banner} turn instead of #{$myKingdom}\n",
-                         TEXT_TAG_WARNING) 
-      isAnOtherKingdom = true 
-   end
+   switchKingdoms(banner,true) if $myKingdom != banner
+   #$myKingdom = banner if( $myKingdom == nil )
+#  if( $myKingdom != banner )
+#     appendTextWithTag("WARNING! This file contains data from the #{banner} turn instead of #{$myKingdom}\n",
+#                        TEXT_TAG_WARNING) 
+#     isAnOtherKingdom = true 
+#  end
 
-   unless isAnOtherKingdom
-      $influence[turn.to_i]=influence
+   unless isAnOtherGame
+      $influence[turn.to_i] = Hash.new if $influence[turn.to_i].nil?
+      $influence[turn.to_i][$myKingdom]=influence
       $infoData.push line
    end
 
-   return isAnOtherKingdom
+   return isAnOtherGame
 end
 
 def addUnusualSighting(line)
@@ -1608,7 +1610,7 @@ def showPopCenterData(area,turn)
       end
 
       ### TODO
-      EmmyToolWindow.new($influence.last, area)
+      EmmyToolWindow.new($influence.last[$myKingdom], area)
       #regionNum=p.getRegion
       #region=$regionList.getRegionByNum(regionNum)
       #return if region.nil?
@@ -1738,8 +1740,10 @@ def loadDocument(filename)
   $canvas.raise($currentTopTag)
 end
 
-def switchKingdoms(newBanner)
-  appendText("Switching kingdoms to #{newBanner}\n")
+def switchKingdoms(newBanner, quiet=false)
+  appendText("Switching kingdoms to #{newBanner}\n") unless quiet
+  $emmyDialog.destroy if TkWinfo.exist?($emmyDialog)
+  $emmyDialog = nil
   $myKingdom = newBanner
   setInfoLabel
 end

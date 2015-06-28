@@ -486,15 +486,15 @@ class PopCenterList
       $canvas.raise($currentTopTag)
    end
    
-   def fixRegions
-      appendText("Fixing Regions.\n\n")
+   def fixRegions(quiet=false)
+      appendText("Fixing Regions.\n\n") unless quiet
       numUpdated=0
       @list.each do |area,popCenter|
          needsFixin=false
          regNum = popCenter.getRegion
          newReg = $regionList.getRegionByArea(area)
          if regNum.nil? or regNum.empty? 
-            appendText("Updating popCenter at #{area} with region #{newReg}.\n")
+            appendText("Updating popCenter at #{area} with region #{newReg}.\n") unless quiet
             needsFixin=true
          elsif regNum != newReg
             # We cheat and use region number "X" to denote a destroyed PC
@@ -507,11 +507,11 @@ class PopCenterList
             numUpdated += 1
             popCenter.setRegion(newReg)
             addColoredMapMarker(area, popCenter.getType[0], popCenter.getLastKnownOwner, popCenter.getRegion)
-            highlightTag("box-#{area}",false)
+            highlightTag("box-#{area}",false) unless quiet
          end
       end
-      appendText("\nUpdated #{numUpdated} population centers.\n")
-      appendText("Do not forget to save!\n") if numUpdated > 0
+      appendText("\nUpdated #{numUpdated} population centers.\n") unless quiet
+      appendText("Do not forget to save!\n") if numUpdated > 0 and not quiet
    end # end fixRegions
 
    def checkOwners(ownedString)
@@ -1338,35 +1338,37 @@ end
 def checkPopCenterOwners(line)
    return if line.nil?
    (turn,x,banner,ownedList)=line.chomp.split(',',4)
-   #appendText("ownedList=[#{ownedList}]\n")
+   switchKingdoms(banner)
    $popCenterList.checkOwners(ownedList) 
 end
 
 # [@turnNumber,"I",@gameNumber,@banner].join(',')
 def addInfoData(line)
-   isAnOtherKingdom = false
+   isAnOtherGame = false
    (turn,x,gameNumber,banner,influence)=line.split(',')
    $gameNumber = gameNumber if( $gameNumber == nil )
    if ($gameNumber != gameNumber )
       appendTextWithTag("WARNING! This file appears to be from game #{gameNumber} instead of #{$gameNumber}\n",
                          TEXT_TAG_WARNING) 
-      isAnOtherKingdom = true
+      isAnOtherGame = true
    end
 
    banner.strip!
-   $myKingdom = banner if( $myKingdom == nil )
-   if( $myKingdom != banner )
-      appendTextWithTag("WARNING! This file contains data from the #{banner} turn instead of #{$myKingdom}\n",
-                         TEXT_TAG_WARNING) 
-      isAnOtherKingdom = true 
-   end
+   switchKingdoms(banner,true) if $myKingdom != banner
+   #$myKingdom = banner if( $myKingdom == nil )
+#  if( $myKingdom != banner )
+#     appendTextWithTag("WARNING! This file contains data from the #{banner} turn instead of #{$myKingdom}\n",
+#                        TEXT_TAG_WARNING) 
+#     isAnOtherKingdom = true 
+#  end
 
-   unless isAnOtherKingdom
-      $influence[turn.to_i]=influence
+   unless isAnOtherGame
+      $influence[turn.to_i] = Hash.new if $influence[turn.to_i].nil?
+      $influence[turn.to_i][$myKingdom]=influence
       $infoData.push line
    end
 
-   return isAnOtherKingdom
+   return isAnOtherGame
 end
 
 def addUnusualSighting(line)
@@ -1389,8 +1391,8 @@ end
 
 #[@turnNumber,"R",'Self',r[:name],regionNum,r[:reaction],r[:controller]].join(',')
 def addRegion(line)
-   (turn,x,x,name,num,reaction,controller)=line.split(',')
-   $regionList.addTurn(turn,num,reaction,controller)
+   (turn,x,x,name,num,reaction,controller,refBanner)=line.chomp.split(',')
+   $regionList.addTurn(turn,num,reaction,controller,refBanner)
 end
 
 #@turnNumber,"A",artifact[:source],artifact[:area],artifact[:fullName],artifact[:shortName],
@@ -1608,7 +1610,7 @@ def showPopCenterData(area,turn)
       end
 
       ### TODO
-      EmmyToolWindow.new($influence.last, area)
+      EmmyToolWindow.new($influence.last[$myKingdom], area)
       #regionNum=p.getRegion
       #region=$regionList.getRegionByNum(regionNum)
       #return if region.nil?
@@ -1687,7 +1689,7 @@ def loadDocument(filename)
   # Start off assuming the file is for this kingdom
   # The return code from addInfoData may change that.
   isAnOtherKingdom = false 
-  currentOwnersLine=nil
+  currentOwnersLine=Array.new
 
   appendText("Loading data from #{filename}\n")
   IO.foreach(filename) { |line|
@@ -1707,19 +1709,11 @@ def loadDocument(filename)
      when 'A'
         addArtifact(line)
      when 'R'
-        if isAnOtherKingdom
-           appendTextWithTag("Ignoring: #{line.strip}.\n",TEXT_TAG_STALE)
-        else
-           addRegion(line) 
-        end
+        addRegion(line) 
      when 'O'
-        if isAnOtherKingdom
-           appendTextWithTag("Ignoring: #{line.strip}.\n",TEXT_TAG_STALE)
-        else
-           # We cannot process this line yet because $currentTurn 
-           # has not been increased yet. Save for later.
-           currentOwnersLine=line  
-        end
+        # We cannot process this line yet because $currentTurn 
+        # has not been increased yet. Save for later.
+        currentOwnersLine.push line  
      when EXPLORED_MARKER_NOPC
         addExploredAreas(line)
      when EXPLORED_MARKER_NOUS
@@ -1734,13 +1728,24 @@ def loadDocument(filename)
   }
   updateFilterLists
   setInfoLabel
+  fixRegions(true)
   $popCenterList.addMarkers
   $regionList.gatherStats
   #playSound
   $currentTurn= $turns.keys.sort_by(&:to_i).last
   appendText("\nCurrent turn is #{$currentTurn}\n")
-  checkPopCenterOwners(currentOwnersLine) 
+  currentOwnersLine.each do |oline|
+     checkPopCenterOwners(oline) 
+  end
   $canvas.raise($currentTopTag)
+end
+
+def switchKingdoms(newBanner, quiet=false)
+  appendText("Switching kingdoms to #{newBanner}\n") unless quiet
+  $emmyDialog.destroy if TkWinfo.exist?($emmyDialog)
+  $emmyDialog = nil
+  $myKingdom = newBanner
+  setInfoLabel
 end
 
 def openDocument
@@ -1991,6 +1996,18 @@ def boxClick(loc)
 
 end
 
+def changeKingdom(entry)
+   text = entry.get.strip.upcase
+   appendText("So you want to be the #{text}\n")
+   $menuDialog.destroy if TkWinfo.exist?($menuDialog)
+   if $kingdomNameMap[text] == nil
+      Tk::messageBox :message => "#{text} is not a valid kingdom name"
+      return
+   end
+
+   switchKingdoms(text)
+end
+
 def enterNewOwner(entry, area)
    text = entry.get.strip.upcase
    appendText("entered #{text} for #{area}\n")
@@ -2026,6 +2043,37 @@ def destroyPC(area)
    $popCenterList.destroyPC(area)
    $canvas.raise($currentTopTag)
 end
+
+def changeMainKingdomDialog
+
+   unHighlight
+   $menuDialog.destroy if TkWinfo.exist?($menuDialog)
+   $menuDialog = TkToplevel.new($root) do
+      title "Change Kingdom"
+   end
+   frame = TkFrame.new($menuDialog) do
+      relief 'sunken'
+      borderwidth 3
+      background 'darkgrey'
+      padx 10
+      pady 10
+   end
+
+   TkLabel.new(frame) do
+      text 'Who do you want to be today?: '
+      pack('side'=>'left')
+   end
+
+   entry = TkEntry.new(frame) do
+      width '10'
+      pack('side'=>'left', 'fill' =>'x', 'expand' => 0)
+   end
+   entry.insert('end', $myKingdom )
+   entry.bind('Return', proc { changeKingdom(entry) } )
+   frame.pack
+
+end
+
 
 def changePCOwner(area)
    pc = $popCenterList.getPopCenter(area)
@@ -2137,6 +2185,7 @@ end
 
 def setupMenus(root)
 
+   menu_bar = TkMenu.new
    file_menu = TkMenu.new(root)
    
    file_menu.add('command',
@@ -2171,12 +2220,21 @@ def setupMenus(root)
                  'command'   => proc { exit 0} ,
                  'underline' => 3)
    
-   menu_bar = TkMenu.new
    menu_bar.add('cascade',
                 'menu'  => file_menu,
                 'label' => "File")
    
    map_menu = TkMenu.new(root)
+   map_menu.add('command',
+                 'label'     => "Zoom In",
+                 'command'   => proc { zoomIn },
+                 'underline' => 5)
+   
+   map_menu.add('command',
+                 'label'     => "Zoom Out",
+                 'command'   => proc { zoomOut },
+                 'underline' => 5)
+   
    map_menu.add('command',
                  'label'     => "Mark Explored...",
                  'command'   => proc { createAddExploredDialog },
@@ -2207,10 +2265,61 @@ def setupMenus(root)
                  'command'   => proc { toggleGroups },
                  'underline' => 7)
    
+   map_menu.add('command',
+                 'label'     => "Change Kingdom",
+                 'command'   => proc { changeMainKingdomDialog },
+                 'underline' => 0)
+   
    menu_bar.add('cascade',
                 'menu'  => map_menu,
                 'label' => "Map")
 
+   report_menu = TkMenu.new(root)
+   report_menu.add('command',
+                   'label'     => "Region Stats",
+                   'command'   => proc { $regionList.showAllStats },
+                   'underline' => 0)
+
+   report_menu.add('command',
+                   'label'     => "All Groups",
+                   'command'   => proc { $groupList.showAllGroups },
+                   'underline' => 0)
+
+   report_menu.add('command',
+                   'label'     => "All Artifacts",
+                   'command'   => proc { showAllArtifacts },
+                   'underline' => 0)
+
+   report_menu.add('command',
+                   'label'     => "Production By Kingdom",
+                   'command'   => proc { showProductionStatsByKingdom },
+                   'underline' => 0)
+
+   report_menu.add('command',
+                   'label'     => "PopCenters By Region",
+                   'command'   => proc { showPopCentersByRegion },
+                   'underline' => 0)
+
+   report_menu.add('command',
+                   'label'     => "Threatened Production",
+                   'command'   => proc { showMyThreatenedProduction },
+                   'underline' => 0)
+
+   report_menu.add('command',
+                   'label'     => "Lost/Gained PopCenters",
+                   'command'   => proc { showPopCenterChanges },
+                   'underline' => 0)
+
+   report_menu.add('command',
+                   'label'     => "Lost/Hired Emissaries",
+                   'command'   => proc { showEmissaryChanges },
+                   'underline' => 0)
+
+
+   menu_bar.add('cascade',
+                'menu'  => report_menu,
+                'label' => "Reports")
+   
    root.menu(menu_bar)
 end
 
@@ -2417,46 +2526,7 @@ def createHistoryRadio(frame)
 end
 
 def createSearchButtons(frame)
-   TkButton.new(frame) do
-      text "Region Stats"
-      command (proc{$regionList.showAllStats})
-      pack
-   end
-   TkButton.new(frame) do
-      text "Show All Groups"
-      command (proc{$groupList.showAllGroups})
-      pack
-   end
-   TkButton.new(frame) do
-      text "All Artifacts"
-      command (proc{showAllArtifacts})
-      pack
-   end
-   TkButton.new(frame) do
-      text "Production By Kingdom"
-      command (proc{showProductionStatsByKingdom})
-      pack
-   end
-   TkButton.new(frame) do
-      text "Pop Centers By Region"
-      command (proc{showPopCentersByRegion})
-      pack
-   end
-   TkButton.new(frame) do
-      text "Threatened Production"
-      command (proc{showMyThreatenedProduction})
-      pack
-   end
-   TkButton.new(frame) do
-      text "Show Lost/Gained Pop Centers"
-      command (proc{showPopCenterChanges})
-      pack
-   end
-   TkButton.new(frame) do
-      text "Show Lost/Hired Emissaries"
-      command (proc{showEmissaryChanges})
-      pack
-   end
+# content removed
 end # end createSearchButtons
 
 def createSearchParts(frame)
@@ -2478,7 +2548,7 @@ def createSearchParts(frame)
       relief 'sunken'
       borderwidth 3
    end
-   createSearchButtons(buttonFrame)
+   #createSearchButtons(buttonFrame)
 
 
    filterFrame = TkFrame.new(frame) do
@@ -2566,10 +2636,10 @@ def startGroupMovementPlotter
 end
 
 
-def fixRegions
-   clearText
+def fixRegions(quiet=false)
+   clearText unless quiet
    $regionList.readRegionBorderFile 
-   $popCenterList.fixRegions
+   $popCenterList.fixRegions(quiet)
 end
 
 def createTextWindow

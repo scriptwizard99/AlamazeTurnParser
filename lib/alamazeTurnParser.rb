@@ -934,10 +934,10 @@ class AlamazeTurnParser
   end
 
   def showRegionalInfo(ofile=$stdout)
-     ofile.printf("Turn,Record Type,Data Source,Region Name,Region Number,Reaction Level,Controller\n")
+     ofile.printf("Turn,Record Type,Data Source,Region Name,Region Number,Reaction Level,Controller,Reference Kingdom\n")
      @regionInfo.keys.each {|regionNum|
         r=@regionInfo[regionNum]
-        record=[@turnNumber,"R",'Self',r[:name],regionNum,r[:reaction],r[:controller]].join(',')
+        record=[@turnNumber,"R",'Self',r[:name],regionNum,r[:reaction],r[:controller],@banner].join(',')
         ofile.puts record
      }
   end

@@ -1,5 +1,27 @@
 Release Notes for the Alamaze Turn Parser
 
+Version 1.8.0
+--------------------------------------------------------------------------------
+- Updated so it can understand more than one kingdom at a time. For example, 
+  if you are playing a warlords format, you can parse the turns from all of 
+  your kingdoms and then switch between the kingdoms to see regional reactions
+  and other kingdom-centric reports. Also, the Emissary Tool now shows the 
+  emissaries, influence, and reaction levels of the kingdom you selected.
+- Changing the kingdom is accomplished via the Change Kingdom option on the Map menu.
+- You can tell which kingdom you are by looking at the big green bar above the map.
+- Note that region and influence information is based on the latest turn.
+  What this means is that if you have parsed turn 4 for most of your kingdoms
+  but not all of them, then the ones whose latest information is only for turn 3
+  will appear to have no regional reactions and no emissaries. Just parse turn 4
+  for that kingdom and they will all magically come back.
+- The map menu also has Zoom In and Zoom Out items which let you switch between
+  the big map and the small map. The functionality has always been there, but now
+  you do not have to remember Control+UpArrow and Control+DownArrow. 
+- Removed the report buttons on the far right of the GUI. Those reports can
+  now be accessed via the Reports menu.
+- You should never need to run the fixRegion option off of the map menu. 
+  I'm happy with that logic so now it runs whenever you load/parse results.
+
 Version 1.7.1
 --------------------------------------------------------------------------------
 - Fixed bug where parsing the turn of another (presumablly allied) kingdom will 

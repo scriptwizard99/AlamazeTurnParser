@@ -74,6 +74,8 @@ begin
    parser.showRegionalInfo()
    puts
    parser.showOwnedPopCenters()
+   puts
+   parser.showHCInfo()
 
    logOut.puts "Parsing complete."
 

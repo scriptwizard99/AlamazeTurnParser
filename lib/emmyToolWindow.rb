@@ -269,10 +269,13 @@ class EmmyToolWindow
          appendText( line, $emmyTextBox)
       end
 
+      appendText("\nNOTE: For cases where you see maybe please consult the Frost Lord tool.", $emmyTextBox)
+      appendText("\nNOTE: Assumes worst case, but does not take into account any Staus Quo orders.", $emmyTextBox)
       tagText($emmyTextBox, "yes",   TEXT_TAG_GOOD)
       tagText($emmyTextBox, "HERE!",   TEXT_TAG_GOOD)
       tagText($emmyTextBox, "maybe", TEXT_TAG_WARNING)
       tagText($emmyTextBox, "no",    TEXT_TAG_DANGER)
+      tagText($emmyTextBox, "NOTE:",    TEXT_TAG_DANGER)
    end
    
 end # class EmmyToolWindow

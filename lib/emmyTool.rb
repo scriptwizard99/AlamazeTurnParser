@@ -24,9 +24,9 @@
 
 class EmmyTool
 
-   POP_VILLAGE=1.3
-   POP_TOWN=2.6
-   POP_CITY=6.5
+   POP_VILLAGE=1.4
+   POP_TOWN=2.8
+   POP_CITY=6.6
 
    REACT_FRIENDLY=1
    REACT_TOLERANT=2
@@ -81,7 +81,7 @@ class EmmyTool
       @popLoc = popLoc
       @popName = popName
       @regionName = regionName
-      @neutralScore = @popType.to_f * @regReact.to_f
+      @neutralScore = @popType.to_f * @regReact.to_f * 1.15 * 1.15
    end
 
    def setPopType(popType)
@@ -117,8 +117,8 @@ class EmmyTool
          return( [CHANCE_NA, CHANCE_NA])
       end
       power = @influence.to_f * rval.to_f
-      powerMin = power * 0.9
-      powerMax = power * 1.1
+      powerMin = power * 0.85
+      powerMax = power * 1.15
       oneStep = getChance(@neutralScore.to_f, powerMin, powerMax)
       twoSteps = getChance(@neutralScore.to_f * 2.0, powerMin, powerMax)
       return([oneStep,twoSteps])

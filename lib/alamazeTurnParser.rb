@@ -20,8 +20,17 @@
     You can contact the author at scriptwizard99@gmail.com
 =end
 
-require 'rubygems'
-require 'pdf/reader'
+begin
+   require 'rubygems'
+   require 'pdf/reader'
+   $pdfReaderLoaded=true
+rescue Exception => e
+   $pdfReaderLoaded=false
+      #appendText("Caught Exception.\n")
+      #appendText("#{e.inspect}.\n")
+      #appendText("\nBacktrace:.\n")
+      #appendText("#{e.backtrace}.\n")
+end # end rescue
 
 
 class AlamazeTurnParser

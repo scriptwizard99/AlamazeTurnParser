@@ -1,10 +1,20 @@
 Release Notes for the Alamaze Turn Parser
 
-Version next
+Version 1.9.0
 --------------------------------------------------------------------------------
 - Correct calculations for the Emissary Tool. They are now closer to what is in
   the Frost Lord 320/330 tool. However, they always assume a worst case but 
   do not take into account any emissaries issing status quo orders. 
+- Now parses out voting status from the High Council
+- GUI has a report to show the data
+- The dialog to parse turns remembers where you left it so that you do not
+  need to keep navigating to the same directory over and over again. 
+- The dialog to parse turns now allows you to select multiple turns at once.
+
+Version 1.8.1
+--------------------------------------------------------------------------------
+- Updated so GUI will still come up even if the PDF gem cannot be found.
+- Executable built with a newer version of ocra (1.3.5)
 
 Version 1.8.0
 --------------------------------------------------------------------------------

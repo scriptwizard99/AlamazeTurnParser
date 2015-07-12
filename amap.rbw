@@ -22,6 +22,8 @@
     You can contact the author at scriptwizard99@gmail.com
 =end
 
+$runRoot=File.dirname($0)
+
 require 'tk'
 require_relative 'lib/version'
 require_relative 'lib/regions'
@@ -32,12 +34,12 @@ require_relative 'lib/groupPlotter'
 require_relative 'lib/manualEntry'
 require_relative 'lib/unusualSighting'
 require_relative 'lib/alamazeTurnParser'
+require_relative 'lib/highCouncil'
 #require 'win32/sound'
 #include Win32
 
 $debug=0
 
-#VERSION="1.2.0"
 
 BOX_HEIGHT=14
 BOX_WIDTH=BOX_HEIGHT
@@ -62,6 +64,7 @@ TEXT_TAG_NORMAL='normal'
 TEXT_TAG_STALE='stale'
 TEXT_TAG_GOOD='good'
 TEXT_TAG_WARNING='warning'
+TEXT_TAG_WARNING2='warning2'
 TEXT_TAG_DANGER='danger'
 
 $kingdomColors = {
@@ -165,8 +168,20 @@ $groupList= nil
 $artifactList = nil
 $unusualSightings = nil
 $toggles = nil
+$resultsDir= "."
+$highCouncilList=nil
 
 $boldFont = TkFont.new( "weight" => "bold")
+
+#---------------------------------------------------------------------
+# The human_sort method was taken from
+# http://blog.zenspider.com/blog/2012/01/array-natural_sort.html
+#---------------------------------------------------------------------
+class Array
+  def human_sort
+    sort_by { |item| item.to_s.split(/(\d+)/).map { |e| [e.to_i, e] } }
+  end
+end
 
 #--------------------------------------------------------------------------
 # CLASS: AreaList
@@ -1395,6 +1410,10 @@ def addRegion(line)
    $regionList.addTurn(turn,num,reaction,controller,refBanner)
 end
 
+def addHighCouncil(line)
+   $highCouncilList.addIssue(line)
+end
+
 #@turnNumber,"A",artifact[:source],artifact[:area],artifact[:fullName],artifact[:shortName],
 #                                artifact[:posessor],artifact[:type],artifact[:statusPts]].join(',')
 def addArtifact(line)
@@ -1637,6 +1656,11 @@ def showPopCenter(area,showHeader)
    end
 end
 
+def showHighCouncilRecords
+   clearText
+   $highCouncilList.printRecords
+end
+
 def showProductionStatsByKingdom
    clearText
    unHighlight
@@ -1710,6 +1734,8 @@ def loadDocument(filename)
         addArtifact(line)
      when 'R'
         addRegion(line) 
+     when 'H'
+        addHighCouncil(line) 
      when 'O'
         # We cannot process this line yet because $currentTurn 
         # has not been increased yet. Save for later.
@@ -1760,7 +1786,6 @@ def openDocument
 end
 
 def runParser(filename,format=AlamazeTurnParser::FORMAT_HTML)
-   clearText
    begin
       tempFile = "ofile.dat"
       File.delete(tempFile) if File.exists?(tempFile)
@@ -1792,6 +1817,7 @@ def runParser(filename,format=AlamazeTurnParser::FORMAT_HTML)
       parser.showArtifactInfo(ofile)
       parser.showRegionalInfo(ofile)
       parser.showOwnedPopCenters(ofile)
+      parser.showHCInfo(ofile)
       ofile.close
    rescue Exception => e
          appendText("Caught Exception.\n")
@@ -1806,17 +1832,24 @@ end # end runParser
 
 def parseTurn
   filetypes = [ ["Alamaze Turn Results", "*.PDF *.html"],["All Files", "*"] ]
-  filename = Tk.getOpenFile('filetypes' => filetypes,
+  filenames = Tk.getOpenFile('filetypes' => filetypes,
+                            'initialdir' => $resultsDir,
+                            'multiple' => true,
                             'parent' => $root )
 
-  if filename.upcase.include? "PDF" 
-     format = AlamazeTurnParser::FORMAT_PDF
-  else
-     format = AlamazeTurnParser::FORMAT_HTML
-  end
-
-  if filename != ""
-    runParser(filename,format)
+  clearText
+  filenames.split.human_sort.each do |filename|
+     if filename.upcase.include? "PDF" 
+        format = AlamazeTurnParser::FORMAT_PDF
+     else
+        format = AlamazeTurnParser::FORMAT_HTML
+     end
+   
+     if filename != ""
+       $resultsDir=File.dirname(filename)
+       runParser(filename,format)
+     end
+     Tk.update_idletasks
   end
 end
 
@@ -1841,6 +1874,7 @@ def saveDocument(filename)
    $artifactList.saveDataToFile(ofile)
    $regionList.saveDataToFile(ofile)
    $unusualSightings.saveDataToFile(ofile)
+   $highCouncilList.saveDataToFile(ofile)
 
    record = [$currentTurn, EXPLORED_MARKER_NOPC, $exploredAreas].join(',')
    ofile.puts record
@@ -2315,6 +2349,12 @@ def setupMenus(root)
                    'command'   => proc { showEmissaryChanges },
                    'underline' => 0)
 
+   report_menu.add('command',
+                   'label'     => "High Council Records",
+                   'command'   => proc { showHighCouncilRecords },
+                   'underline' => 0)
+
+
 
    menu_bar.add('cascade',
                 'menu'  => report_menu,
@@ -2701,6 +2741,7 @@ def createTextBox(frame)
    $textBox.tag_configure(TEXT_TAG_GOOD, :foreground=>'#156f08' )
    #$textBox.tag_configure(TEXT_TAG_WARNING, :background=>'darkgrey', :foreground=>'#dd8d12' )
    $textBox.tag_configure(TEXT_TAG_WARNING, :background=>'darkgrey', :foreground=>'black' )
+   $textBox.tag_configure(TEXT_TAG_WARNING2, :foreground=>'orange' )
    $textBox.tag_configure(TEXT_TAG_DANGER, :foreground=>'red' )
    $textBox.tag_configure(TEXT_TAG_STALE, :foreground=>'#77acae')
 
@@ -2732,7 +2773,7 @@ end
 
 def setupImage
    $bigImage = TkPhotoImage.new
-   $bigImage.file = "graphics/alamaze-resurgent.gif"
+   $bigImage.file = "#{$runRoot}/graphics/alamaze-resurgent.gif"
    #$bigImage.file = "/users/jgibbs/Documents/GitHub/AlamazeTurnParser/graphics/alamaze-resurgent.gif"
    $bigW = $bigImage.width
    $bigH = $bigImage.height
@@ -2743,10 +2784,8 @@ def setupImage
 end
 
 def setupBM(banner,type,color)
-   #bigBM = TkBitmapImage.new('file'=>"/users/jgibbs/Documents/GitHub/AlamazeTurnParser/graphics/#{type}Big.xbm", 'foreground' => color)
-   #smallBM = TkBitmapImage.new('file'=>"/users/jgibbs/Documents/GitHub/AlamazeTurnParser/graphics/#{type}Small.xbm", 'foreground' => color)
-   bigBM = TkBitmapImage.new('file'=>"graphics/#{type}Big.xbm", 'foreground' => color)
-   smallBM = TkBitmapImage.new('file'=>"graphics/#{type}Small.xbm", 'foreground' => color)
+   bigBM = TkBitmapImage.new('file'=>"#{$runRoot}/graphics/#{type}Big.xbm", 'foreground' => color)
+   smallBM = TkBitmapImage.new('file'=>"#{$runRoot}/graphics/#{type}Small.xbm", 'foreground' => color)
    $kingdomBitmaps = Hash.new if $kingdomBitmaps == nil
    $kingdomBitmaps[banner] = Hash.new if $kingdomBitmaps[banner] == nil
    $kingdomBitmaps[banner][type] = Hash.new if $kingdomBitmaps[banner][type] == nil
@@ -3029,6 +3068,7 @@ def initVars
    $emissaries = Hash.new
    $armies = Hash.new
    $turns = Hash.new
+   $highCouncilList = HighCouncilIssueList.new
    $currentTurn = 0
    $gameNumber = nil
    $myKingdom = nil
@@ -3057,6 +3097,7 @@ end
 #===============================================================================
 #===============================================================================
 begin 
+
    initVars
    programName="Alamaze Turn Parser GUI (v#{VERSION})"
    $root = TkRoot.new { title programName }
@@ -3073,17 +3114,23 @@ begin
       appendText("OCRA_EXECUTABLE=[#{ENV['OCRA_EXECUTABLE']}]\n")
    end
    appendText("$0=[#{$0}]\n")
+   appendText("pdfReaderLoaded=#{$pdfReaderLoaded}\n")
    
    tweakVolume
 
-   
-   Tk.mainloop
+   if not defined?(Ocra) 
+      Tk.mainloop
+   else
+      puts "Detected that ocra is building script. Skipping Tk.mainloop"
+   end
+
 rescue Exception => e
-   File.open("parserGui.err","w+") do |f|
+   File.open("parserGuiError.txt","w+") do |f|
       f.puts "Caught Exception."
       f.puts e.inspect
       f.puts "\nBacktrace:\n"
       f.puts e.backtrace
+      f.puts "\nCurrent Directory=[#{Dir.getwd}]\n"
    end
 end
 

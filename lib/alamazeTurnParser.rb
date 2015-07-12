@@ -20,8 +20,17 @@
     You can contact the author at scriptwizard99@gmail.com
 =end
 
-require 'rubygems'
-require 'pdf/reader'
+begin
+   require 'rubygems'
+   require 'pdf/reader'
+   $pdfReaderLoaded=true
+rescue Exception => e
+   $pdfReaderLoaded=false
+      #appendText("Caught Exception.\n")
+      #appendText("#{e.inspect}.\n")
+      #appendText("\nBacktrace:.\n")
+      #appendText("#{e.backtrace}.\n")
+end # end rescue
 
 
 class AlamazeTurnParser
@@ -54,6 +63,7 @@ class AlamazeTurnParser
   SECTION_VICTORY_CONDITIONS=21
   SECTION_ESO=22
   SECTION_RECON_ENCOUNTERS=23
+  SECTION_HIGH_COUNCIL=24
 
   @section=0
   @banner="xxxxxxx"
@@ -145,6 +155,8 @@ class AlamazeTurnParser
      elsif ( string.include? "Activities of the Royal Court")
         @section = SECTION_EMISSARY_LOCATIONS
      elsif ( string.include? "Activities of the High Council")
+        @section = SECTION_HIGH_COUNCIL
+     elsif ( string.include? "The New Issue Before The Council")
         @section = SECTION_DONT_CARE
      elsif ( string.include? "Results of our Military maneuvers")
         @section = SECTION_MILITARY_MANEUVERS
@@ -224,6 +236,8 @@ class AlamazeTurnParser
         collectRegionalSummary(string.upcase)
      when SECTION_POLITICAL_EVENTS
         collectPoliticalEvents(string.upcase)
+     when SECTION_HIGH_COUNCIL
+        collectHighCouncilInfo(string.upcase)
      when SECTION_DONT_CARE
         # do nothing
      else
@@ -305,6 +319,43 @@ class AlamazeTurnParser
            @emissaryInfo[name]['source']="Political"
         end
      end
+  end
+
+  def collectHighCouncilInfo(line)
+     return if line.include? "THIS PAST MONTH"
+     @hcInfo=Hash.new if @hcInfo == nil
+     #puts "[01234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789]"
+     #printf("[%s]\n",line)
+
+     if line.include? "THE HIGH COUNCIL VOTE FOR"
+        @hcInfo[:getIssue]=false
+     end
+     if md=line.match(/THE MOTION (\S+)/)
+        @hcInfo[:getVoting]=false
+        @hcInfo[:result]=md[1]
+     end
+
+     if @hcInfo[:getIssue]  == true
+        @hcInfo[:issue] += "#{line.strip} " 
+     end
+
+     if @hcInfo[:getVoting]  == true
+        voter=fixBanner(line[16,2])
+        vote=line[35..44].strip
+        @hcInfo[:votes][voter]=vote
+     end
+
+     if md=line.match(/THE (\S+).*KINGDOM PUT/)
+        @hcInfo[:proposer]=fixBanner(md[1][0..1])
+        @hcInfo[:getIssue]=true
+        @hcInfo[:issue] = ""
+     end
+
+     if line.include? "THE HIGH COUNCIL VOTED AS FOLLOWS"
+        @hcInfo[:getVoting]=true
+        @hcInfo[:votes]=Hash.new
+     end
+
   end
 
   def collectRegionalSummary(line)
@@ -946,6 +997,27 @@ class AlamazeTurnParser
      ofile.printf("Turn,Record Type,Kingdom,<comma separated pop center list>\n")
      record=[@turnNumber,"O",@banner, @ownedPopCenters.join(',')  ].join(',')
       ofile.puts record
+  end
+
+  def showHCInfo(ofile=$stdout)
+     votes=Array.new
+     return if @hcInfo[:votes].nil?
+     return if @hcInfo[:result].nil?
+     ofile.printf("Turn,Record Type,Proposer,Result,Issue,<comma separated list of kingdom-vote sets>\n")
+     @hcInfo[:votes].keys.each do |voter|
+        v="#{voter}-#{@hcInfo[:votes][voter]}"
+        votes.push v
+     end
+     #issue=@hcInfo[:issue].gsub(/.*WE MOVE THAT/,"").gsub(/BY THIS COUNCIL/,"").gsub(/BY THIS BODY/,"").tr(",.","  ").strip
+     issue=@hcInfo[:issue].gsub(/.*WE MOVE THAT/,"")
+     issue.gsub!(/BY THIS COUNCIL/,"")
+     issue.gsub!(/BY THIS BODY/,"")
+     issue.gsub!(/RULER BE/,"")
+     issue.gsub!(/OFFICIALY/,"")
+     issue.gsub!(/IMMEDIATELY/,"")
+     issue.tr!(",.","  ")
+     record=[@turnNumber,"H",@hcInfo[:proposer],@hcInfo[:result].gsub('.',''),issue.strip, votes.join(',') ].join(',')
+     ofile.puts record
   end
 
 end

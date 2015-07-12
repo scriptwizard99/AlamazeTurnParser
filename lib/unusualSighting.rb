@@ -26,7 +26,7 @@ class UnSightingInfo
 
    def initialize()
       @list=Hash.new
-      @graphicsFile="graphics/unusualSighting.gif"
+      @graphicsFile="#{$runRoot}/graphics/unusualSighting.gif"
       setupImages
    end
 

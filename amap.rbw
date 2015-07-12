@@ -34,6 +34,7 @@ require_relative 'lib/groupPlotter'
 require_relative 'lib/manualEntry'
 require_relative 'lib/unusualSighting'
 require_relative 'lib/alamazeTurnParser'
+require_relative 'lib/highCouncil'
 #require 'win32/sound'
 #include Win32
 
@@ -63,6 +64,7 @@ TEXT_TAG_NORMAL='normal'
 TEXT_TAG_STALE='stale'
 TEXT_TAG_GOOD='good'
 TEXT_TAG_WARNING='warning'
+TEXT_TAG_WARNING2='warning2'
 TEXT_TAG_DANGER='danger'
 
 $kingdomColors = {
@@ -1409,7 +1411,7 @@ def addRegion(line)
 end
 
 def addHighCouncil(line)
-   $highCouncilList.push(line)
+   $highCouncilList.addIssue(line)
 end
 
 #@turnNumber,"A",artifact[:source],artifact[:area],artifact[:fullName],artifact[:shortName],
@@ -1656,10 +1658,7 @@ end
 
 def showHighCouncilRecords
    clearText
-   appendTextWithTag("\nRaw High Council Records:\n", TEXT_TAG_TITLE)
-   $highCouncilList.each do |line|
-      appendText(line)
-   end
+   $highCouncilList.printRecords
 end
 
 def showProductionStatsByKingdom
@@ -1875,6 +1874,7 @@ def saveDocument(filename)
    $artifactList.saveDataToFile(ofile)
    $regionList.saveDataToFile(ofile)
    $unusualSightings.saveDataToFile(ofile)
+   $highCouncilList.saveDataToFile(ofile)
 
    record = [$currentTurn, EXPLORED_MARKER_NOPC, $exploredAreas].join(',')
    ofile.puts record
@@ -2741,6 +2741,7 @@ def createTextBox(frame)
    $textBox.tag_configure(TEXT_TAG_GOOD, :foreground=>'#156f08' )
    #$textBox.tag_configure(TEXT_TAG_WARNING, :background=>'darkgrey', :foreground=>'#dd8d12' )
    $textBox.tag_configure(TEXT_TAG_WARNING, :background=>'darkgrey', :foreground=>'black' )
+   $textBox.tag_configure(TEXT_TAG_WARNING2, :foreground=>'orange' )
    $textBox.tag_configure(TEXT_TAG_DANGER, :foreground=>'red' )
    $textBox.tag_configure(TEXT_TAG_STALE, :foreground=>'#77acae')
 
@@ -3067,7 +3068,7 @@ def initVars
    $emissaries = Hash.new
    $armies = Hash.new
    $turns = Hash.new
-   $highCouncilList = Array.new
+   $highCouncilList = HighCouncilIssueList.new
    $currentTurn = 0
    $gameNumber = nil
    $myKingdom = nil

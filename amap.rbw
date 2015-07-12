@@ -22,6 +22,8 @@
     You can contact the author at scriptwizard99@gmail.com
 =end
 
+$runRoot=File.dirname($0)
+
 require 'tk'
 require_relative 'lib/version'
 require_relative 'lib/regions'
@@ -37,7 +39,6 @@ require_relative 'lib/alamazeTurnParser'
 
 $debug=0
 
-#VERSION="1.2.0"
 
 BOX_HEIGHT=14
 BOX_WIDTH=BOX_HEIGHT
@@ -2732,7 +2733,7 @@ end
 
 def setupImage
    $bigImage = TkPhotoImage.new
-   $bigImage.file = "graphics/alamaze-resurgent.gif"
+   $bigImage.file = "#{$runRoot}/graphics/alamaze-resurgent.gif"
    #$bigImage.file = "/users/jgibbs/Documents/GitHub/AlamazeTurnParser/graphics/alamaze-resurgent.gif"
    $bigW = $bigImage.width
    $bigH = $bigImage.height
@@ -2743,10 +2744,8 @@ def setupImage
 end
 
 def setupBM(banner,type,color)
-   #bigBM = TkBitmapImage.new('file'=>"/users/jgibbs/Documents/GitHub/AlamazeTurnParser/graphics/#{type}Big.xbm", 'foreground' => color)
-   #smallBM = TkBitmapImage.new('file'=>"/users/jgibbs/Documents/GitHub/AlamazeTurnParser/graphics/#{type}Small.xbm", 'foreground' => color)
-   bigBM = TkBitmapImage.new('file'=>"graphics/#{type}Big.xbm", 'foreground' => color)
-   smallBM = TkBitmapImage.new('file'=>"graphics/#{type}Small.xbm", 'foreground' => color)
+   bigBM = TkBitmapImage.new('file'=>"#{$runRoot}/graphics/#{type}Big.xbm", 'foreground' => color)
+   smallBM = TkBitmapImage.new('file'=>"#{$runRoot}/graphics/#{type}Small.xbm", 'foreground' => color)
    $kingdomBitmaps = Hash.new if $kingdomBitmaps == nil
    $kingdomBitmaps[banner] = Hash.new if $kingdomBitmaps[banner] == nil
    $kingdomBitmaps[banner][type] = Hash.new if $kingdomBitmaps[banner][type] == nil
@@ -3057,6 +3056,7 @@ end
 #===============================================================================
 #===============================================================================
 begin 
+
    initVars
    programName="Alamaze Turn Parser GUI (v#{VERSION})"
    $root = TkRoot.new { title programName }
@@ -3073,17 +3073,23 @@ begin
       appendText("OCRA_EXECUTABLE=[#{ENV['OCRA_EXECUTABLE']}]\n")
    end
    appendText("$0=[#{$0}]\n")
+   appendText("pdfReaderLoaded=#{$pdfReaderLoaded}\n")
    
    tweakVolume
 
-   
-   Tk.mainloop
+   if not defined?(Ocra) 
+      Tk.mainloop
+   else
+      puts "Detected that ocra is building script. Skipping Tk.mainloop"
+   end
+
 rescue Exception => e
-   File.open("parserGui.err","w+") do |f|
+   File.open("parserGuiError.txt","w+") do |f|
       f.puts "Caught Exception."
       f.puts e.inspect
       f.puts "\nBacktrace:\n"
       f.puts e.backtrace
+      f.puts "\nCurrent Directory=[#{Dir.getwd}]\n"
    end
 end
 

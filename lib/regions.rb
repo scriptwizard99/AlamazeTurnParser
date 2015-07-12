@@ -41,7 +41,7 @@ $regionMap = {
 #--------------------------------------------------------------------------
 class RegionList
 
-   REGION_INFO_FILE="data/RegionBorders.csv"
+   REGION_INFO_FILE="#{$runRoot}/data/RegionBorders.csv"
 
    @list           # Hash of Region objects
    @regionLocMap   # Map of area to regionNumber

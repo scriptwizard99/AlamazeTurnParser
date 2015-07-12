@@ -1,5 +1,9 @@
 Release Notes for the Alamaze Turn Parser
 
+Version 1.8.1
+--------------------------------------------------------------------------------
+- Updated so GUI will still come up even if the PDF gem cannot be found.
+
 Version 1.8.0
 --------------------------------------------------------------------------------
 - Updated so it can understand more than one kingdom at a time. For example, 

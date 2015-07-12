@@ -166,6 +166,8 @@ $groupList= nil
 $artifactList = nil
 $unusualSightings = nil
 $toggles = nil
+$resultsDir= "."
+$highCouncilList=nil
 
 $boldFont = TkFont.new( "weight" => "bold")
 
@@ -1396,6 +1398,10 @@ def addRegion(line)
    $regionList.addTurn(turn,num,reaction,controller,refBanner)
 end
 
+def addHighCouncil(line)
+   $highCouncilList.push(line)
+end
+
 #@turnNumber,"A",artifact[:source],artifact[:area],artifact[:fullName],artifact[:shortName],
 #                                artifact[:posessor],artifact[:type],artifact[:statusPts]].join(',')
 def addArtifact(line)
@@ -1638,6 +1644,14 @@ def showPopCenter(area,showHeader)
    end
 end
 
+def showHighCouncilRecords
+   clearText
+   appendTextWithTag("\nRaw High Council Records:\n", TEXT_TAG_TITLE)
+   $highCouncilList.each do |line|
+      appendText(line)
+   end
+end
+
 def showProductionStatsByKingdom
    clearText
    unHighlight
@@ -1711,6 +1725,8 @@ def loadDocument(filename)
         addArtifact(line)
      when 'R'
         addRegion(line) 
+     when 'H'
+        addHighCouncil(line) 
      when 'O'
         # We cannot process this line yet because $currentTurn 
         # has not been increased yet. Save for later.
@@ -1793,6 +1809,7 @@ def runParser(filename,format=AlamazeTurnParser::FORMAT_HTML)
       parser.showArtifactInfo(ofile)
       parser.showRegionalInfo(ofile)
       parser.showOwnedPopCenters(ofile)
+      parser.showHCInfo(ofile)
       ofile.close
    rescue Exception => e
          appendText("Caught Exception.\n")
@@ -1808,6 +1825,7 @@ end # end runParser
 def parseTurn
   filetypes = [ ["Alamaze Turn Results", "*.PDF *.html"],["All Files", "*"] ]
   filename = Tk.getOpenFile('filetypes' => filetypes,
+                            'initialdir' => $resultsDir,
                             'parent' => $root )
 
   if filename.upcase.include? "PDF" 
@@ -1817,6 +1835,7 @@ def parseTurn
   end
 
   if filename != ""
+    $resultsDir=File.dirname(filename)
     runParser(filename,format)
   end
 end
@@ -2315,6 +2334,12 @@ def setupMenus(root)
                    'label'     => "Lost/Hired Emissaries",
                    'command'   => proc { showEmissaryChanges },
                    'underline' => 0)
+
+   report_menu.add('command',
+                   'label'     => "High Council Records",
+                   'command'   => proc { showHighCouncilRecords },
+                   'underline' => 0)
+
 
 
    menu_bar.add('cascade',
@@ -3028,6 +3053,7 @@ def initVars
    $emissaries = Hash.new
    $armies = Hash.new
    $turns = Hash.new
+   $highCouncilList = Array.new
    $currentTurn = 0
    $gameNumber = nil
    $myKingdom = nil

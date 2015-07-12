@@ -171,6 +171,16 @@ $highCouncilList=nil
 
 $boldFont = TkFont.new( "weight" => "bold")
 
+#---------------------------------------------------------------------
+# The human_sort method was taken from
+# http://blog.zenspider.com/blog/2012/01/array-natural_sort.html
+#---------------------------------------------------------------------
+class Array
+  def human_sort
+    sort_by { |item| item.to_s.split(/(\d+)/).map { |e| [e.to_i, e] } }
+  end
+end
+
 #--------------------------------------------------------------------------
 # CLASS: AreaList
 #--------------------------------------------------------------------------
@@ -1829,7 +1839,7 @@ def parseTurn
                             'parent' => $root )
 
   clearText
-  filenames.split.each do |filename|
+  filenames.split.human_sort.each do |filename|
      if filename.upcase.include? "PDF" 
         format = AlamazeTurnParser::FORMAT_PDF
      else

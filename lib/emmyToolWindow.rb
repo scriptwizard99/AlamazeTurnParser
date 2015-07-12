@@ -227,7 +227,7 @@ class EmmyToolWindow
       else
          $curPopType.value = popCenter.getType
          setReactionFromRegion( popCenter.getRegion )
-         tool=EmmyTool.new($curPopType.value,@influence,@curReaction )
+         tool=EmmyTool.new($curPopType.value,@influence,@curReaction, popCenter.getLastKnownOwner )
          fillEmmyWindow(tool)
       end
    end

@@ -72,16 +72,18 @@ class EmmyTool
       'ENV' => RANK_ENVOY
    }
 
-   def initialize(popType, influence, regionalReaction, 
+   def initialize(popType, influence, regionalReaction, owner,
                   popLoc=nil, popName=nil, regionName=nil)
       #puts "pt=#{popType} i=#{influence} rr=#{regionalReaction}"
       setPopType(popType)
       setRegionalReact(regionalReaction)
       @influence = influence
+      @owner = owner
       @popLoc = popLoc
       @popName = popName
       @regionName = regionName
-      @neutralScore = @popType.to_f * @regReact.to_f * 1.15 * 1.15
+      @neutralScoreLow = @popType.to_f * @regReact.to_f
+      @neutralScoreHigh = @neutralScoreLow * 1.3225
    end
 
    def setPopType(popType)
@@ -100,13 +102,10 @@ class EmmyTool
       end
    end
    
-   def getNeutralScore
-      return @neutralScore
-   end
 
-   def getChance(difficulty, powerMin, powerMax)
-      return CHANCE_YES if powerMin.to_f > difficulty.to_f
-      return CHANCE_NO if powerMax.to_f < difficulty.to_f
+   def getChance(difficultyLow,difficultyHigh, powerMin, powerMax)
+      return CHANCE_YES if powerMin.to_f > difficultyHigh.to_f
+      return CHANCE_NO if powerMax.to_f < difficultyLow.to_f
       return CHANCE_MAYBE
    end
 
@@ -119,13 +118,21 @@ class EmmyTool
       power = @influence.to_f * rval.to_f
       powerMin = power * 0.85
       powerMax = power * 1.15
-      oneStep = getChance(@neutralScore.to_f, powerMin, powerMax)
-      twoSteps = getChance(@neutralScore.to_f * 2.0, powerMin, powerMax)
+
+      if @owner == "NE" or @owner == "HU"
+         difficultyHigh=@neutralScoreLow
+      else
+         difficultyHigh=@neutralScoreHigh
+      end
+
+      oneStep = getChance(@neutralScoreLow.to_f, difficultyHigh, powerMin, powerMax)
+
+      if @owner == "NE"
+         twoSteps = CHANCE_NA
+      else
+         twoSteps = getChance(@neutralScoreLow.to_f * 2.0, difficultyHigh * 2.0, powerMin, powerMax)
+      end
       return([oneStep,twoSteps])
    end
 
-   def getInfo
-      info=sprintf("")
-   end
-   
 end # class EmmyTool

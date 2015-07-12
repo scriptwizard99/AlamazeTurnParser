@@ -1008,7 +1008,7 @@ class AlamazeTurnParser
         v="#{voter}-#{@hcInfo[:votes][voter]}"
         votes.push v
      end
-     record=[@turnNumber,"H",@hcInfo[:proposer],@hcInfo[:result].gsub('.',''),@hcInfo[:issue].tr(","," ").strip, votes.join(',') ].join(',')
+     record=[@turnNumber,"H",@hcInfo[:proposer],@hcInfo[:result].gsub('.',''),@hcInfo[:issue].gsub(/.*WE MOVE THAT/,"").tr(",.","  ").strip, votes.join(',') ].join(',')
      ofile.puts record
   end
 

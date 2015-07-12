@@ -1777,7 +1777,6 @@ def openDocument
 end
 
 def runParser(filename,format=AlamazeTurnParser::FORMAT_HTML)
-   clearText
    begin
       tempFile = "ofile.dat"
       File.delete(tempFile) if File.exists?(tempFile)
@@ -1824,19 +1823,24 @@ end # end runParser
 
 def parseTurn
   filetypes = [ ["Alamaze Turn Results", "*.PDF *.html"],["All Files", "*"] ]
-  filename = Tk.getOpenFile('filetypes' => filetypes,
+  filenames = Tk.getOpenFile('filetypes' => filetypes,
                             'initialdir' => $resultsDir,
+                            'multiple' => true,
                             'parent' => $root )
 
-  if filename.upcase.include? "PDF" 
-     format = AlamazeTurnParser::FORMAT_PDF
-  else
-     format = AlamazeTurnParser::FORMAT_HTML
-  end
-
-  if filename != ""
-    $resultsDir=File.dirname(filename)
-    runParser(filename,format)
+  clearText
+  filenames.split.each do |filename|
+     if filename.upcase.include? "PDF" 
+        format = AlamazeTurnParser::FORMAT_PDF
+     else
+        format = AlamazeTurnParser::FORMAT_HTML
+     end
+   
+     if filename != ""
+       $resultsDir=File.dirname(filename)
+       runParser(filename,format)
+     end
+     Tk.update_idletasks
   end
 end
 

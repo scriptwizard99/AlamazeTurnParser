@@ -1,0 +1,53 @@
+This file aims to document the contents of the CSV data file output by the parser and updated by the GUI. This file serves as an interface because other tools can read that data and display it as they need. At the inception of this project, I had hoped to just create the turn parser and then some Excel guru would create a tool that did cool things with the data. As fate would have it, a guru did not appear until after I wrote the GUI. 
+
+While the parser, itself, output column headers, there was never a formal interface spec. 
+
+The parser writes its data to STDOUT with the assumption that the data will be redirected to a file. The data is in Comma Separated Values (CSV) format because it is spreadsheet friendly. However, not all of the data is the same. Each line is a data record, with the second value  indicating which type of record it is. That value tells you how to interprit the rest of the fields in that record. 
+
+Every data record begins with a number followed by a comma with no spaces. While the file uses # as a comment character, anyone reading the file should ignore any line that is not a known data record.
+
+The parser does not output a version identifier record yet, but when it does, it will have this form.
+
+0,V,parser version,data format version
+
+If that record does not appear, assume the version is 2.0. Why, 2.0? Because the file format has already changed once since release.
+
+The rest of the data records follow.
+
+
+I - imfo or influence
+P - popupation center
+E - emissary
+G - group
+A - artifact
+R - region
+O - owned popcenter list
+X - explored no pop center
+@ - no unusual encounter
+! - all clear
+U - unusual sighting
+M - marker. map annotation
+C - color record
+V - version info
+H - high council
+D - priestesses hired (AN)
+N - agent hired/trained (UN)
+Z - ally/enemy declarations
+T - nextturn due date
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#
+

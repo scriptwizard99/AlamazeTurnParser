@@ -15,25 +15,26 @@ If that record does not appear, assume the version is 2.0. Why, 2.0? Because the
 The rest of the data records follow.
 
 
-I - imfo or influence
-P - popupation center
+A - artifact
+B - Battles that occur
+C - color record
+D - priestesses hired (AN)
 E - emissary
 G - group
-A - artifact
-R - region
+H - high council
+I - imfo or influence
+M - marker. map annotation
 O - owned popcenter list
+P - popupation center
+R - region
+S - agent hired/trained (UN)
+T - nextturn due date
+U - unusual sighting
+V - version info
 X - explored no pop center
+Z - ally/enemy declarations
 @ - no unusual encounter
 ! - all clear
-U - unusual sighting
-M - marker. map annotation
-C - color record
-V - version info
-H - high council
-D - priestesses hired (AN)
-N - agent hired/trained (UN)
-Z - ally/enemy declarations
-T - nextturn due date
 
 
 

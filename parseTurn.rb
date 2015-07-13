@@ -76,6 +76,8 @@ begin
    parser.showOwnedPopCenters()
    puts
    parser.showHCInfo()
+   puts
+   parser.showBattles()
 
    logOut.puts "Parsing complete."
 

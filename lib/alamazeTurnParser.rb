@@ -64,6 +64,7 @@ class AlamazeTurnParser
   SECTION_ESO=22
   SECTION_RECON_ENCOUNTERS=23
   SECTION_HIGH_COUNCIL=24
+  SECTION_MILITARY_ENGAGEMENTS=25
 
   @section=0
   @banner="xxxxxxx"
@@ -158,6 +159,8 @@ class AlamazeTurnParser
         @section = SECTION_HIGH_COUNCIL
      elsif ( string.include? "The New Issue Before The Council")
         @section = SECTION_DONT_CARE
+     elsif ( string.include? "Reports of our Military engagements")
+        @section = SECTION_MILITARY_ENGAGEMENTS
      elsif ( string.include? "Results of our Military maneuvers")
         @section = SECTION_MILITARY_MANEUVERS
      elsif ( string.include? "Military Group Status")
@@ -214,6 +217,8 @@ class AlamazeTurnParser
         collectEmissaryRecon(string.upcase)
      when SECTION_EMISSARY_LOCATIONS
         collectEmissaryLocations(string.upcase)
+     when SECTION_MILITARY_ENGAGEMENTS
+        collectMilitaryEngagements(string.upcase)
      when SECTION_MILITARY_MANEUVERS
         collectMilitaryManeuvers(string.upcase)
      when SECTION_MILITARY_STATUS
@@ -589,6 +594,43 @@ class AlamazeTurnParser
      end
   end
 
+  def processEngagementHeader(header)
+     @militaryEngagements = Array.new if @militaryEngagements.nil?
+
+     if header.include? "ATTACK BY THE" or header.include? "ASSAULT BY THE"
+        md=header.match(/ BY THE (.*) ON THE (.+) OF .*, LOCATED IN\s*AREA\s+(\S+)\s*OF\s*\S+.*:/)
+        @militaryEngagements.push md
+     end
+     if header.include? "BATTLE BETWEEN THE"
+        md=header.match(/ BETWEEN THE (.+) AND THE (.+) IN THE.*OF\s*AREA\s*(\S+):/)
+        @militaryEngagements.push md
+     end
+     if header.include? "RECONNAISANCE OF UNUSUAL SIGHTING"
+        puts header
+     end
+  end
+
+  def collectMilitaryEngagements(line)
+     #puts "[01234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789]"
+     #printf("[%s]\n",line)
+     if @tempME.nil?
+        @tempME = Hash.new 
+        @tempME[:getHeader] = false
+        @tempME[:header] = ""
+     end
+     if @tempME[:getHeader] == true
+        @tempME[:header] += line.chomp
+     end
+     if line.include? "ATTACK BY THE" or line.include? "ASSAULT BY THE" or line.include? "BATTLE BETWEEN THE" or line.include? "RECONNAISANCE OF UNUSUAL SIGHTING"
+        @tempME[:getHeader] = true
+        @tempME[:header] = line.chomp
+     end
+     if @tempME[:header].include? ":"
+        processEngagementHeader( @tempME[:header]  )
+        @tempME[:getHeader] = false
+        @tempME[:header] = ""
+     end
+  end
 
   def collectMilitaryManeuvers(line)
      return if line.include? "NO POPULATION CENTERS"
@@ -1014,10 +1056,21 @@ class AlamazeTurnParser
      issue.gsub!(/BY THIS BODY/,"")
      issue.gsub!(/RULER BE/,"")
      issue.gsub!(/OFFICIALY/,"")
+     issue.gsub!(/OFFICIALLY/,"")
      issue.gsub!(/IMMEDIATELY/,"")
      issue.tr!(",.","  ")
      record=[@turnNumber,"H",@hcInfo[:proposer],@hcInfo[:result].gsub('.',''),issue.strip, votes.join(',') ].join(',')
      ofile.puts record
+  end
+
+  def showBattles(ofile=$stdout)
+     return if @militaryEngagements.nil?
+     ofile.printf("Turn,RecordType,Location,Attacker,Defender\n")
+     @militaryEngagements.each do |md|
+        next if md.nil?
+        record=[@turnNumber,"B",md[3],md[1],md[2] ].join(',')
+        ofile.puts record
+     end
   end
 
 end

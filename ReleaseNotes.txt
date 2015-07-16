@@ -10,6 +10,8 @@ Version 1.9.0
 - The dialog to parse turns remembers where you left it so that you do not
   need to keep navigating to the same directory over and over again. 
 - The dialog to parse turns now allows you to select multiple turns at once.
+- Increased the size of the big map and allowed the map frame to get bigger
+  so you do not have to scroll. 
 
 Version 1.8.1
 --------------------------------------------------------------------------------

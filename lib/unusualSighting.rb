@@ -32,10 +32,11 @@ class UnSightingInfo
 
    def setupImages
       @images=Hash.new
-      bigImage = TkPhotoImage.new
-      bigImage.file = @graphicsFile
+      realBigImage = TkPhotoImage.new
+      realBigImage.file = @graphicsFile
+      bigImage = shrinkImage(realBigImage,2)
       @images[:big] =  bigImage
-      @images[:small] = shrinkImage(bigImage)
+      @images[:small] = shrinkImage(realBigImage,3)
    end
 
 #  def addMapImages(canvas, loc)

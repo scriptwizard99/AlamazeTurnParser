@@ -2756,7 +2756,7 @@ def createTextBox(frame)
    end
 end
 
-def shrinkImage(image)
+def shrinkImage(image,subsample)
    w = image.width
    h = image.height
    puts "w=#{w} h=#{h}"
@@ -2764,7 +2764,7 @@ def shrinkImage(image)
    newImage = TkPhotoImage.new
    newImage.copy(image,
                  :from => [0, 0, w, h],
-                 :subsample => [3,3])
+                 :subsample => [subsample,subsample])
    w = newImage.width
    h = newImage.height
    puts "w=#{w} h=#{h}"
@@ -2772,13 +2772,15 @@ def shrinkImage(image)
 end
 
 def setupImage
-   $bigImage = TkPhotoImage.new
-   $bigImage.file = "#{$runRoot}/graphics/alamaze-resurgent.gif"
+   $realBigImage = TkPhotoImage.new
+   $realBigImage.file = "#{$runRoot}/graphics/alamaze-resurgent.gif"
    #$bigImage.file = "/users/jgibbs/Documents/GitHub/AlamazeTurnParser/graphics/alamaze-resurgent.gif"
+
+   $bigImage = shrinkImage($realBigImage,2)
    $bigW = $bigImage.width
    $bigH = $bigImage.height
 
-   $smallImage = shrinkImage($bigImage)
+   $smallImage = shrinkImage($realBigImage,3)
    $smallW = $smallImage.width
    $smallH = $smallImage.height
 end
@@ -2803,7 +2805,10 @@ end
 
 
 def zoomIn
-   $canvas.configure(:scrollregion => [0,0,$bigW,$bigH])
+   $canvas.configure(
+               :width => $bigW,
+               :height => $bigH,
+               :scrollregion => [0,0,$bigW,$bigH])
    $currentTopTag = 'big'
    $canvas.raise($currentTopTag)
 end
@@ -2811,7 +2816,10 @@ end
 def zoomOut
    w = $smallImage.width
    h = $smallImage.height
-   $canvas.configure(:scrollregion => [0,0,$smallW,$smallH])
+   $canvas.configure(
+               :width => $smallW,
+               :height => $smallH,
+               :scrollregion => [0,0,$smallW,$smallH])
    $currentTopTag = 'small'
    $canvas.raise($currentTopTag)
    $canvas.xview('scroll', 0, 'units')
@@ -2890,14 +2898,14 @@ end # end create canvas
 def initOffsets
    $offsets = Hash.new
    $offsets[:big] = Hash.new
-   $offsets[:big][:frameX]=53
-   $offsets[:big][:frameY]=40
-   $offsets[:big][:boxX]=80.5
-   $offsets[:big][:boxY]=60.45
+   $offsets[:big][:frameX]=26
+   $offsets[:big][:frameY]=20
+   $offsets[:big][:boxX]=40.30
+   $offsets[:big][:boxY]=30.15
    $offsets[:big][:tag]='big'
-   $offsets[:big][:font]= TkFont.new( "size" => '30', "weight" => "bold")
-   $offsets[:big][:thickLine]=12
-   $offsets[:big][:thinLine]=7
+   $offsets[:big][:font]= TkFont.new( "size" => '15', "weight" => "bold")
+   $offsets[:big][:thickLine]=12 * 2.0/3.0
+   $offsets[:big][:thinLine]=7 * 2.0/3.0
    $offsets[:small] = Hash.new
    $offsets[:small][:frameX]=17
    $offsets[:small][:frameY]=14
@@ -2969,8 +2977,10 @@ end
 def addRedBlock(loc)
    x = loc[0].ord - 'A'.ord
    y = loc[1].ord - 'A'.ord
-   drawABlock(:big, x, y)
+   box=drawABlock(:big, x, y)
+   box.configure('fill' => 'red')
    drawABlock(:small, x, y)
+   box.configure('fill' => 'red')
 end
 
 
@@ -3032,8 +3042,8 @@ def createMainDisplay(root)
  
    $canvas.pack
    cFrame.pack('side' => 'left' )
-   sFrame.pack('side' => 'right', 'fill' => 'both', 'expand' => 1 )
-   csFrame.pack('side' => 'top', 'fill' => 'x', 'expand' => 0 )
+   sFrame.pack('side' => 'right', 'fill' => 'y', 'expand' => 0 )
+   csFrame.pack('side' => 'top', 'fill' => 'both', 'expand' => 1 )
    tFrame.pack('side' => 'top' , 'fill' => 'both' , 'expand' => 1)
 
 
@@ -3117,6 +3127,10 @@ begin
    appendText("pdfReaderLoaded=#{$pdfReaderLoaded}\n")
    
    tweakVolume
+
+   addRedBlock('AA')
+   addRedBlock('BB')
+   addRedBlock('ZZ')
 
    if not defined?(Ocra) 
       Tk.mainloop

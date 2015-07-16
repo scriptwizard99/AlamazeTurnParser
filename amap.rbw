@@ -1763,6 +1763,9 @@ def loadDocument(filename)
   currentOwnersLine.each do |oline|
      checkPopCenterOwners(oline) 
   end
+  hideExplored
+  hideGroups
+  showGroups
   $canvas.raise($currentTopTag)
 end
 
@@ -2272,22 +2275,22 @@ def setupMenus(root)
    map_menu.add('command',
                  'label'     => "Mark Explored...",
                  'command'   => proc { createAddExploredDialog },
-                 'underline' => 0)
+                 'underline' => 6)
    
    map_menu.add('command',
                  'label'     => "Manual Entry...",
                  'command'   => proc { startManualEntryDialog },
-                 'underline' => 2)
+                 'underline' => 0)
    
    map_menu.add('command',
                  'label'     => "Group Movement Plotter...",
                  'command'   => proc { startGroupMovementPlotter },
-                 'underline' => 6)
+                 'underline' => 15)
    
-   map_menu.add('command',
-                 'label'     => "Fix Regions",
-                 'command'   => proc { fixRegions },
-                 'underline' => 0)
+#  map_menu.add('command',
+#                'label'     => "Fix Regions",
+#                'command'   => proc { fixRegions },
+#                'underline' => 0)
    
    map_menu.add('command',
                  'label'     => "Toggle Explored",
@@ -2317,7 +2320,7 @@ def setupMenus(root)
    report_menu.add('command',
                    'label'     => "All Groups",
                    'command'   => proc { $groupList.showAllGroups },
-                   'underline' => 0)
+                   'underline' => 4)
 
    report_menu.add('command',
                    'label'     => "All Artifacts",
@@ -2327,7 +2330,7 @@ def setupMenus(root)
    report_menu.add('command',
                    'label'     => "Production By Kingdom",
                    'command'   => proc { showProductionStatsByKingdom },
-                   'underline' => 0)
+                   'underline' => 14)
 
    report_menu.add('command',
                    'label'     => "PopCenters By Region",
@@ -2342,12 +2345,12 @@ def setupMenus(root)
    report_menu.add('command',
                    'label'     => "Lost/Gained PopCenters",
                    'command'   => proc { showPopCenterChanges },
-                   'underline' => 0)
+                   'underline' => 12)
 
    report_menu.add('command',
                    'label'     => "Lost/Hired Emissaries",
                    'command'   => proc { showEmissaryChanges },
-                   'underline' => 0)
+                   'underline' => 11)
 
    report_menu.add('command',
                    'label'     => "High Council Records",
@@ -2652,6 +2655,15 @@ def toggleExplored
    end
 end
 
+def showGroups
+   return if $toggles[:groups] == true
+   toggleGroups
+end
+
+def hideGroups
+   return if $toggles[:groups] == false
+   toggleGroups
+end
 
 def toggleGroups
    unHighlight
@@ -2759,7 +2771,7 @@ end
 def shrinkImage(image,subsample)
    w = image.width
    h = image.height
-   puts "w=#{w} h=#{h}"
+   #puts "w=#{w} h=#{h}"
 
    newImage = TkPhotoImage.new
    newImage.copy(image,
@@ -2892,6 +2904,41 @@ def createCanvas(frame)
 
       $root.bind "Control-Down" do
         zoomOut
+      end
+
+      $root.bind "c" do
+        closeFile
+      end
+
+      $root.bind "o" do
+        openDocument
+      end
+
+      $root.bind "p" do
+        parseTurn
+      end
+
+      $root.bind "s" do
+        saveData
+      end
+
+      $root.bind "Control-s" do
+        saveData
+      end
+
+      $root.bind "Control-S" do
+        saveAsData
+      end
+
+      $root.bind "g" do
+        toggleGroups
+      end
+
+      $root.bind "e" do
+        toggleExplored
+      end
+      $root.bind "x" do
+        toggleExplored
       end
 end # end create canvas
 
@@ -3035,14 +3082,15 @@ def createMainDisplay(root)
 
    createCanvas(cFrame)
    fillGrid
-   zoomOut
+   #zoomOut
+   zoomIn
    #createTextBox(tFrame)
    createSearchParts(sFrame)
 
  
    $canvas.pack
    cFrame.pack('side' => 'left' )
-   sFrame.pack('side' => 'right', 'fill' => 'y', 'expand' => 0 )
+   sFrame.pack('side' => 'right', 'fill' => 'both', 'expand' => 1 )
    csFrame.pack('side' => 'top', 'fill' => 'both', 'expand' => 1 )
    tFrame.pack('side' => 'top' , 'fill' => 'both' , 'expand' => 1)
 
@@ -3057,7 +3105,8 @@ def closeFile
    initVars
    addMapImages
    fillGrid
-   zoomOut
+   #zoomOut
+   zoomIn
    clearText
    $currentOpenFile = nil
 end
@@ -3099,7 +3148,7 @@ def initVars
    $unusualSightings = UnSightingInfo.new
    $toggles = Hash.new
    $toggles[:explored]=true
-   $toggles[:groups]=false
+   $toggles[:groups]=true
    setupImage
 end
 
@@ -3128,9 +3177,9 @@ begin
    
    tweakVolume
 
-   addRedBlock('AA')
-   addRedBlock('BB')
-   addRedBlock('ZZ')
+   #addRedBlock('AA')
+   #addRedBlock('BB')
+   #addRedBlock('ZZ')
 
    if not defined?(Ocra) 
       Tk.mainloop

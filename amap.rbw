@@ -750,20 +750,22 @@ class GroupList
       return groupList
    end
 
-   def showAllGroups
-      clearText
+   def showAllGroups(printReport=true)
       unHighlight
-      appendTextWithTag("Last known location of all groups (ordered by group ID)\n\n",TEXT_TAG_TITLE)
-      showArmyHeader
+      if printReport
+         clearText 
+         appendTextWithTag("Last known location of all groups (ordered by group ID)\n\n",TEXT_TAG_TITLE) 
+         showArmyHeader
+      end
       @list.keys.sort.each do |groupKey|
          turn = @list[groupKey].getLastTurn 
          line = @list[groupKey].toString(  turn )
          if turn == $currentTurn
-            appendText(line)
+            appendText(line) if printReport
             #addColoredMapMarker(@list[groupKey].getLocOnTurn(turn), @list[groupKey].getName, @list[groupKey].getBanner)
             addColoredMapMarker(@list[groupKey].getLocOnTurn(turn), 'A', @list[groupKey].getBanner, @list[groupKey].getName[0])
          else
-            appendTextWithTag(line, TEXT_TAG_STALE)
+            appendTextWithTag(line, TEXT_TAG_STALE) if printReport
          end
       end
       $canvas.raise($currentTopTag)
@@ -1841,7 +1843,9 @@ def parseTurn
                             'parent' => $root )
 
   clearText
+  appendText("File list to process [#{filenames}]\n")
   filenames.split.human_sort.each do |filename|
+     next if filename.strip.empty?
      if filename.upcase.include? "PDF" 
         format = AlamazeTurnParser::FORMAT_PDF
      else
@@ -1991,6 +1995,7 @@ def addColoredMapMarker(loc,marker,banner, markerText="")
    yPart = loc[0].ord - 'A'.ord
    xPart = loc[1].ord - 'A'.ord
    addSizedMarker(:big, xPart, yPart, marker,markerText,loc,banner)
+   addSizedMarker(:medium, xPart, yPart, marker,markerText,loc,banner)
    addSizedMarker(:small, xPart, yPart, marker,markerText,loc,banner)
 end
 
@@ -2263,8 +2268,13 @@ def setupMenus(root)
    
    map_menu = TkMenu.new(root)
    map_menu.add('command',
-                 'label'     => "Zoom In",
-                 'command'   => proc { zoomIn },
+                 'label'     => "Zoom In Big",
+                 'command'   => proc { zoomInBig },
+                 'underline' => 5)
+   
+   map_menu.add('command',
+                 'label'     => "Zoom In Medium",
+                 'command'   => proc { zoomInMedium },
                  'underline' => 5)
    
    map_menu.add('command',
@@ -2373,6 +2383,14 @@ def drawBox(canvas,x,y,tag)
    bBox.bind('1', proc { boxClick tag } )
    bBox.bind('3', proc { markExplored tag } )
    bBox.bind('Enter', proc { $cursorLoc.value = tag.gsub('box','Area') } )
+
+   mBox = drawABlock(:medium, x,y)
+   mBox.addtag(I_AM_A_BOX)
+   mBox.addtag(tag)
+   mBox.bind('1', proc { boxClick tag } )
+   mBox.bind('3', proc { markExplored tag } )
+   mBox.bind('Enter', proc { $cursorLoc.value = tag.gsub('box','Area') } )
+
    sBox = drawABlock(:small, x,y)
    sBox.addtag(I_AM_A_BOX)
    sBox.addtag(tag)
@@ -2671,7 +2689,7 @@ def toggleGroups
       $canvas.delete('ARMY')
       $toggles[:groups] = false
    else
-      $groupList.showAllGroups
+      $groupList.showAllGroups(false)
       $toggles[:groups] = true
    end
    $canvas.raise($currentTopTag)
@@ -2784,15 +2802,17 @@ def shrinkImage(image,subsample)
 end
 
 def setupImage
-   $realBigImage = TkPhotoImage.new
-   $realBigImage.file = "#{$runRoot}/graphics/alamaze-resurgent.gif"
-   #$bigImage.file = "/users/jgibbs/Documents/GitHub/AlamazeTurnParser/graphics/alamaze-resurgent.gif"
-
-   $bigImage = shrinkImage($realBigImage,2)
+   $bigImage = TkPhotoImage.new
+   $bigImage.file = "#{$runRoot}/graphics/alamaze-resurgent.gif"
    $bigW = $bigImage.width
    $bigH = $bigImage.height
+   #$bigImage.file = "/users/jgibbs/Documents/GitHub/AlamazeTurnParser/graphics/alamaze-resurgent.gif"
 
-   $smallImage = shrinkImage($realBigImage,3)
+   $medImage = shrinkImage($bigImage,2)
+   $medW = $medImage.width
+   $medH = $medImage.height
+
+   $smallImage = shrinkImage($bigImage,3)
    $smallW = $smallImage.width
    $smallH = $smallImage.height
 end
@@ -2804,6 +2824,7 @@ def setupBM(banner,type,color)
    $kingdomBitmaps[banner] = Hash.new if $kingdomBitmaps[banner] == nil
    $kingdomBitmaps[banner][type] = Hash.new if $kingdomBitmaps[banner][type] == nil
    $kingdomBitmaps[banner][type][:big]=bigBM
+   $kingdomBitmaps[banner][type][:medium]=bigBM
    $kingdomBitmaps[banner][type][:small]=smallBM
 end
 
@@ -2816,12 +2837,21 @@ def setupKingdomBitmaps
 end
 
 
-def zoomIn
+def zoomInBig
    $canvas.configure(
-               :width => $bigW,
-               :height => $bigH,
+               :width => $medW,
+               :height => $medH,
                :scrollregion => [0,0,$bigW,$bigH])
    $currentTopTag = 'big'
+   $canvas.raise($currentTopTag)
+end
+
+def zoomInMedium
+   $canvas.configure(
+               :width => $medW,
+               :height => $medH,
+               :scrollregion => [0,0,$medW,$medH])
+   $currentTopTag = 'medium'
    $canvas.raise($currentTopTag)
 end
 
@@ -2899,7 +2929,7 @@ def createCanvas(frame)
       end
 
       $root.bind "Control-Up" do
-        zoomIn
+        zoomInMedium
       end
 
       $root.bind "Control-Down" do
@@ -2945,14 +2975,25 @@ end # end create canvas
 def initOffsets
    $offsets = Hash.new
    $offsets[:big] = Hash.new
-   $offsets[:big][:frameX]=26
-   $offsets[:big][:frameY]=20
-   $offsets[:big][:boxX]=40.30
-   $offsets[:big][:boxY]=30.15
+   $offsets[:big][:frameX]=53
+   $offsets[:big][:frameY]=40
+   $offsets[:big][:boxX]=80.5
+   $offsets[:big][:boxY]=60.45
    $offsets[:big][:tag]='big'
-   $offsets[:big][:font]= TkFont.new( "size" => '15', "weight" => "bold")
-   $offsets[:big][:thickLine]=12 * 2.0/3.0
-   $offsets[:big][:thinLine]=7 * 2.0/3.0
+   $offsets[:big][:font]= TkFont.new( "size" => '30', "weight" => "bold")
+   $offsets[:big][:thickLine]=12 
+   $offsets[:big][:thinLine]=7 
+
+   $offsets[:medium] = Hash.new
+   $offsets[:medium][:frameX]=26
+   $offsets[:medium][:frameY]=20
+   $offsets[:medium][:boxX]=40.30
+   $offsets[:medium][:boxY]=30.15
+   $offsets[:medium][:tag]='medium'
+   $offsets[:medium][:font]= TkFont.new( "size" => '15', "weight" => "bold")
+   $offsets[:medium][:thickLine]=12 * 2.0/3.0
+   $offsets[:medium][:thinLine]=7 * 2.0/3.0
+
    $offsets[:small] = Hash.new
    $offsets[:small][:frameX]=17
    $offsets[:small][:frameY]=14
@@ -3026,6 +3067,8 @@ def addRedBlock(loc)
    y = loc[1].ord - 'A'.ord
    box=drawABlock(:big, x, y)
    box.configure('fill' => 'red')
+   box=drawABlock(:medium, x, y)
+   box.configure('fill' => 'red')
    drawABlock(:small, x, y)
    box.configure('fill' => 'red')
 end
@@ -3083,7 +3126,7 @@ def createMainDisplay(root)
    createCanvas(cFrame)
    fillGrid
    #zoomOut
-   zoomIn
+   zoomInMedium
    #createTextBox(tFrame)
    createSearchParts(sFrame)
 
@@ -3106,14 +3149,15 @@ def closeFile
    addMapImages
    fillGrid
    #zoomOut
-   zoomIn
+   zoomInMedium
    clearText
    $currentOpenFile = nil
 end
 
 def addMapImages
-   TkcImage.new($canvas,$smallW/2,$smallH/2, 'image' => $smallImage, :tags => 'small')
    TkcImage.new($canvas,$bigW/2,$bigH/2, 'image' => $bigImage, :tags => 'big')
+   TkcImage.new($canvas,$medW/2,$medH/2, 'image' => $medImage, :tags => 'medium')
+   TkcImage.new($canvas,$smallW/2,$smallH/2, 'image' => $smallImage, :tags => 'small')
 end
 
 def initVars

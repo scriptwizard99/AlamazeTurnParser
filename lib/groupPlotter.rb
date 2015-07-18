@@ -242,7 +242,7 @@ end # end class GroupMovementPlotter
 def drawCurvyLine(uniqueTag, areaList)
    $canvas.delete(uniqueTag)
    return if areaList.size < 2
-   [:small,:big].each do |size|
+   [:small,:medium, :big].each do |size|
       locList = Array.new
       areaList.each do |area|
          locList.push( getCenter(area,size))

@@ -1,6 +1,6 @@
 Release Notes for the Alamaze Turn Parser
 
-Version 1.9.0
+Version 1.9.1
 --------------------------------------------------------------------------------
 - Correct calculations for the Emissary Tool. They are now closer to what is in
   the Frost Lord 320/330 tool. However, they always assume a worst case but 

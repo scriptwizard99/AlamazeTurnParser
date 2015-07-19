@@ -1835,16 +1835,39 @@ def runParser(filename,format=AlamazeTurnParser::FORMAT_HTML)
    loadDocument(tempFile)
 end # end runParser
 
+# When a file name or path has a blank in it,
+# each file is surrounded in curly braces.
+def splitFileNames(nameString)
+   goodNames=nil
+
+   if nameString[0] == '{'
+
+      goodNames=Array.new
+      nameArray=nameString.gsub(' {','').tr('{',' ').split('}')
+
+      nameArray.each do |drivelessName|
+#        appendText("name=[#{drivelessName}]\n")
+         next if drivelessName.strip.empty?
+         goodNames.push drivelessName.strip
+      end
+   else
+      goodNames=nameString.split
+   end
+
+   return goodNames
+end
+
 def parseTurn
   filetypes = [ ["Alamaze Turn Results", "*.PDF *.html"],["All Files", "*"] ]
-  filenames = Tk.getOpenFile('filetypes' => filetypes,
+  filenameString = Tk.getOpenFile('filetypes' => filetypes,
                             'initialdir' => $resultsDir,
                             'multiple' => true,
                             'parent' => $root )
 
   clearText
-  appendText("File list to process [#{filenames}]\n")
-  filenames.split.human_sort.each do |filename|
+  appendText("File list to process [#{filenameString}]\n")
+  filenames=splitFileNames(filenameString)
+  filenames.human_sort.each do |filename|
      next if filename.strip.empty?
      if filename.upcase.include? "PDF" 
         format = AlamazeTurnParser::FORMAT_PDF

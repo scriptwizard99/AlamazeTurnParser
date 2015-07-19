@@ -1,6 +1,6 @@
 Release Notes for the Alamaze Turn Parser
 
-Version 1.9.1
+Version 1.9.2
 --------------------------------------------------------------------------------
 - Correct calculations for the Emissary Tool. They are now closer to what is in
   the Frost Lord 320/330 tool. However, they always assume a worst case but 
@@ -10,8 +10,12 @@ Version 1.9.1
 - The dialog to parse turns remembers where you left it so that you do not
   need to keep navigating to the same directory over and over again. 
 - The dialog to parse turns now allows you to select multiple turns at once.
-- Increased the size of the big map and allowed the map frame to get bigger
-  so you do not have to scroll. 
+- There are now three sizes of the map, accessable via the map menu.
+  Zoom Out - takes you to the smallest map (the default map in previous versions)
+  Zoom In Medium - takes you to an intermediat size map. This size includes making
+                   the map window bigger too
+  Zoom In Big - this map is the biggest; however, the map window does not get any bigger
+                because it then would not fit on some people's screens. There are scrollbars.
 
 Version 1.8.1
 --------------------------------------------------------------------------------

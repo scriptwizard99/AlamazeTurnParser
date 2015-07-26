@@ -1,5 +1,10 @@
 Release Notes for the Alamaze Turn Parser
 
+Version 1.9.3
+--------------------------------------------------------------------------------
+- Updated disclaimer at the bottom of the Emissary Tool to be more clear.
+- Made Emissary Tool text window taller to make sure you can see disclaimer.
+
 Version 1.9.2
 --------------------------------------------------------------------------------
 - Correct calculations for the Emissary Tool. They are now closer to what is in

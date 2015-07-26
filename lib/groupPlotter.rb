@@ -1,5 +1,5 @@
 =begin
-    Alamaze Data Miner - This is a GUI for displaying data parsed out
+    Alamaze Turn Parser - This is a GUI for displaying data parsed out
     from pdf turn results from the Alamaze PBEM game.
 
     Copyright (C) 2014  Joseph V. Gibbs III

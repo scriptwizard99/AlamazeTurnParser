@@ -1969,7 +1969,12 @@ end
 def appendTextWithTag(string,tag,tb=nil)
    createTextWindow
    tb=$textBox if tb.nil?
-   tb.insert('end',string, tag)
+   begin
+      tb.insert('end',string, tag)
+   rescue Exception => e
+      tb=$textBox 
+      tb.insert('end',string, tag)
+   end
 end
 
 def appendText(string,tb=nil)

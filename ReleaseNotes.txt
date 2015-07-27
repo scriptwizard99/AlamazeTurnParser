@@ -7,6 +7,12 @@ Version 1.9.4
 - Added bindingd to the groups and pop centers so that the location text at
   the bottom of the window would update. That binding had been on the grid boxes,
   but with them gone, there was no location information to display.
+- Parser now picks up when a battle occurs. All it grabs is the location,
+  the attacker, and the defender.
+- GUI now shows crossed swords on the map where a battle occurred (current turn only)
+- Battle markers can be toggled with the 'b' key or by menu.
+- Battle history is included when you click on a pop center 
+- Can get a report of all battles that occurred
 
 Version 1.9.3
 --------------------------------------------------------------------------------

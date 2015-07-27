@@ -35,6 +35,7 @@ require_relative 'lib/manualEntry'
 require_relative 'lib/unusualSighting'
 require_relative 'lib/alamazeTurnParser'
 require_relative 'lib/highCouncil'
+require_relative 'lib/battle'
 #require 'win32/sound'
 #include Win32
 
@@ -170,6 +171,8 @@ $unusualSightings = nil
 $toggles = nil
 $resultsDir= "."
 $highCouncilList=nil
+$passThroughRecords=nil
+$battleList=nil
 
 $boldFont = TkFont.new( "weight" => "bold")
 
@@ -1418,6 +1421,11 @@ def addHighCouncil(line)
    $highCouncilList.addIssue(line)
 end
 
+def addBattle(line)
+   $passThroughRecords.push line
+   $battleList.addBattle(line)
+end
+
 #@turnNumber,"A",artifact[:source],artifact[:area],artifact[:fullName],artifact[:shortName],
 #                                artifact[:posessor],artifact[:type],artifact[:statusPts]].join(',')
 def addArtifact(line)
@@ -1740,6 +1748,8 @@ def loadDocument(filename)
         addRegion(line) 
      when 'H'
         addHighCouncil(line) 
+     when 'B'
+        addBattle(line) 
      when 'O'
         # We cannot process this line yet because $currentTurn 
         # has not been increased yet. Save for later.
@@ -1769,7 +1779,9 @@ def loadDocument(filename)
   end
   hideExplored
   hideGroups
+  hideBattles
   showGroups
+  showBattles
   $canvas.raise($currentTopTag)
 end
 
@@ -1825,6 +1837,7 @@ def runParser(filename,format=AlamazeTurnParser::FORMAT_HTML)
       parser.showRegionalInfo(ofile)
       parser.showOwnedPopCenters(ofile)
       parser.showHCInfo(ofile)
+      parser.showBattles(ofile)
       ofile.close
    rescue Exception => e
          appendText("Caught Exception.\n")
@@ -1908,6 +1921,10 @@ def saveDocument(filename)
    $unusualSightings.saveDataToFile(ofile)
    $highCouncilList.saveDataToFile(ofile)
 
+   $passThroughRecords.each do |line|
+      ofile.puts line
+   end
+
    record = [$currentTurn, EXPLORED_MARKER_NOPC, $exploredAreas].join(',')
    ofile.puts record
 
@@ -1985,6 +2002,8 @@ def addSizedMarker(size,x,y,marker,markerText,loc,banner)
       (m,t) = drawAVillage(size,x,y,markerText,color)
    elsif marker == "T"
       (m,t) = drawATown(size,x,y,markerText,color)
+   elsif marker == "B"
+      m = $battleList.drawBattle(size,x,y,loc)
    elsif marker == EXPLORED_MARKER_NOPC
       m = drawNoPC(size,x,y,loc)
    elsif marker == EXPLORED_MARKER_NOUS
@@ -2337,6 +2356,11 @@ def setupMenus(root)
    map_menu.add('command',
                  'label'     => "Toggle Groups",
                  'command'   => proc { toggleGroups },
+                 'underline' => 7)
+   
+   map_menu.add('command',
+                 'label'     => "Toggle Battles",
+                 'command'   => proc { toggleBattles },
                  'underline' => 7)
    
    map_menu.add('command',
@@ -2705,9 +2729,19 @@ def showGroups
    toggleGroups
 end
 
+def showBattles
+   return if $toggles[:battles] == true
+   toggleBattles
+end
+
 def hideGroups
    return if $toggles[:groups] == false
    toggleGroups
+end
+
+def hideBattles
+   return if $toggles[:battles] == false
+   toggleBattles
 end
 
 def toggleGroups
@@ -2718,6 +2752,18 @@ def toggleGroups
    else
       $groupList.showAllGroups(false)
       $toggles[:groups] = true
+   end
+   $canvas.raise($currentTopTag)
+end
+
+def toggleBattles
+   unHighlight
+   if $toggles[:battles] == true
+      $canvas.delete('BATTLE')
+      $toggles[:battles] = false
+   else
+      $battleList.showAllBattles(false)
+      $toggles[:battles] = true
    end
    $canvas.raise($currentTopTag)
 end
@@ -2991,6 +3037,10 @@ def createCanvas(frame)
         toggleGroups
       end
 
+      $root.bind "b" do
+        toggleBattles
+      end
+
       $root.bind "e" do
         toggleExplored
       end
@@ -3201,6 +3251,8 @@ def initVars
    $armies = Hash.new
    $turns = Hash.new
    $highCouncilList = HighCouncilIssueList.new
+   $battleList = BattleList.new
+   $passThroughRecords = Array.new 
    $currentTurn = 0
    $gameNumber = nil
    $myKingdom = nil

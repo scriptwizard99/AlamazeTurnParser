@@ -13,6 +13,7 @@ Version 1.9.4
 - Battle markers can be toggled with the 'b' key or by menu.
 - Battle history is included when you click on a pop center 
 - Can get a report of all battles that occurred
+- Fixed Issue #23. Closing the output text window no longer keeps you from saving.
 
 Version 1.9.3
 --------------------------------------------------------------------------------

@@ -1054,6 +1054,7 @@ class AlamazeTurnParser
      issue=@hcInfo[:issue].gsub(/.*WE MOVE THAT/,"")
      issue.gsub!(/BY THIS COUNCIL/,"")
      issue.gsub!(/BY THIS BODY/,"")
+     issue.gsub!(/THIS HIGH COUNCIL'S/,"")
      issue.gsub!(/RULER BE/,"")
      issue.gsub!(/OFFICIALY/,"")
      issue.gsub!(/OFFICIALLY/,"")

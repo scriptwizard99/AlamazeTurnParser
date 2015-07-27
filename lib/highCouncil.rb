@@ -50,6 +50,7 @@ class HighCouncilIssueList
 
       tagText($textBox,"PASSED",TEXT_TAG_GOOD)
       tagText($textBox,"COMMEND",TEXT_TAG_GOOD)
+      tagText($textBox,"ENDORSEMENT",TEXT_TAG_GOOD)
       tagText($textBox,"UP",TEXT_TAG_GOOD)
       tagText($textBox,"YEA",TEXT_TAG_GOOD)
       tagText($textBox,"SECRET",TEXT_TAG_WARNING2)

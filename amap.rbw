@@ -1,7 +1,7 @@
 #!/usr/bin/env rubyw
 
 =begin
-    Alamaze Data Miner - This is a GUI for displaying data parsed out
+    Alamaze Turn Parser - This is a GUI for displaying data parsed out
     from pdf turn results from the Alamaze PBEM game.
 
     Copyright (C) 2014  Joseph V. Gibbs III
@@ -750,20 +750,22 @@ class GroupList
       return groupList
    end
 
-   def showAllGroups
-      clearText
+   def showAllGroups(printReport=true)
       unHighlight
-      appendTextWithTag("Last known location of all groups (ordered by group ID)\n\n",TEXT_TAG_TITLE)
-      showArmyHeader
+      if printReport
+         clearText 
+         appendTextWithTag("Last known location of all groups (ordered by group ID)\n\n",TEXT_TAG_TITLE) 
+         showArmyHeader
+      end
       @list.keys.sort.each do |groupKey|
          turn = @list[groupKey].getLastTurn 
          line = @list[groupKey].toString(  turn )
          if turn == $currentTurn
-            appendText(line)
+            appendText(line) if printReport
             #addColoredMapMarker(@list[groupKey].getLocOnTurn(turn), @list[groupKey].getName, @list[groupKey].getBanner)
             addColoredMapMarker(@list[groupKey].getLocOnTurn(turn), 'A', @list[groupKey].getBanner, @list[groupKey].getName[0])
          else
-            appendTextWithTag(line, TEXT_TAG_STALE)
+            appendTextWithTag(line, TEXT_TAG_STALE) if printReport
          end
       end
       $canvas.raise($currentTopTag)
@@ -1173,6 +1175,7 @@ end
 def unHighlightTag(tag)
   $canvas.itemconfigure(tag, 
                         'width' => 1,
+                        'state' => 'hidden',
                         'outline' => BOX_OUTLINE_NORMAL)
 end
 
@@ -1189,6 +1192,7 @@ def highlightTag(tag, clearOtherHighlights)
   #$canvas.itemconfigure('Marker', 'fill' =>'black' ) 
   $canvas.itemconfigure(tag, 
                         'width' => 3,
+                        'state' => 'normal',
                         'outline' => BOX_OUTLINE_HIGHLIGHTED)
                         #'fill' => 'green')
    $canvas.raise($currentTopTag)
@@ -1763,6 +1767,9 @@ def loadDocument(filename)
   currentOwnersLine.each do |oline|
      checkPopCenterOwners(oline) 
   end
+  hideExplored
+  hideGroups
+  showGroups
   $canvas.raise($currentTopTag)
 end
 
@@ -1830,15 +1837,40 @@ def runParser(filename,format=AlamazeTurnParser::FORMAT_HTML)
    loadDocument(tempFile)
 end # end runParser
 
+# When a file name or path has a blank in it,
+# each file is surrounded in curly braces.
+def splitFileNames(nameString)
+   goodNames=nil
+
+   if nameString[0] == '{'
+
+      goodNames=Array.new
+      nameArray=nameString.gsub(' {','').tr('{',' ').split('}')
+
+      nameArray.each do |drivelessName|
+#        appendText("name=[#{drivelessName}]\n")
+         next if drivelessName.strip.empty?
+         goodNames.push drivelessName.strip
+      end
+   else
+      goodNames=nameString.split
+   end
+
+   return goodNames
+end
+
 def parseTurn
   filetypes = [ ["Alamaze Turn Results", "*.PDF *.html"],["All Files", "*"] ]
-  filenames = Tk.getOpenFile('filetypes' => filetypes,
+  filenameString = Tk.getOpenFile('filetypes' => filetypes,
                             'initialdir' => $resultsDir,
                             'multiple' => true,
                             'parent' => $root )
 
   clearText
-  filenames.split.human_sort.each do |filename|
+  appendText("File list to process [#{filenameString}]\n")
+  filenames=splitFileNames(filenameString)
+  filenames.human_sort.each do |filename|
+     next if filename.strip.empty?
      if filename.upcase.include? "PDF" 
         format = AlamazeTurnParser::FORMAT_PDF
      else
@@ -1970,10 +2002,12 @@ def addSizedMarker(size,x,y,marker,markerText,loc,banner)
 
    m.bind('1', proc { boxClick loc } )
    m.bind('3', proc { |x,y| rightClickMarker(x,y,loc,marker) }, "%X %Y" )
+   m.bind('Enter', proc { $cursorLoc.value = loc } )
    
    unless t.nil?
       t.bind('1', proc { boxClick loc } ) 
       t.bind('3', proc { |x,y| rightClickMarker(x,y,loc,marker) }, "%X %Y" ) 
+      t.bind('Enter', proc { $cursorLoc.value = loc } )
    end
 end
 
@@ -1988,6 +2022,7 @@ def addColoredMapMarker(loc,marker,banner, markerText="")
    yPart = loc[0].ord - 'A'.ord
    xPart = loc[1].ord - 'A'.ord
    addSizedMarker(:big, xPart, yPart, marker,markerText,loc,banner)
+   addSizedMarker(:medium, xPart, yPart, marker,markerText,loc,banner)
    addSizedMarker(:small, xPart, yPart, marker,markerText,loc,banner)
 end
 
@@ -2260,8 +2295,13 @@ def setupMenus(root)
    
    map_menu = TkMenu.new(root)
    map_menu.add('command',
-                 'label'     => "Zoom In",
-                 'command'   => proc { zoomIn },
+                 'label'     => "Zoom In Big",
+                 'command'   => proc { zoomInBig },
+                 'underline' => 5)
+   
+   map_menu.add('command',
+                 'label'     => "Zoom In Medium",
+                 'command'   => proc { zoomInMedium },
                  'underline' => 5)
    
    map_menu.add('command',
@@ -2272,22 +2312,22 @@ def setupMenus(root)
    map_menu.add('command',
                  'label'     => "Mark Explored...",
                  'command'   => proc { createAddExploredDialog },
-                 'underline' => 0)
+                 'underline' => 6)
    
    map_menu.add('command',
                  'label'     => "Manual Entry...",
                  'command'   => proc { startManualEntryDialog },
-                 'underline' => 2)
+                 'underline' => 0)
    
    map_menu.add('command',
                  'label'     => "Group Movement Plotter...",
                  'command'   => proc { startGroupMovementPlotter },
-                 'underline' => 6)
+                 'underline' => 15)
    
-   map_menu.add('command',
-                 'label'     => "Fix Regions",
-                 'command'   => proc { fixRegions },
-                 'underline' => 0)
+#  map_menu.add('command',
+#                'label'     => "Fix Regions",
+#                'command'   => proc { fixRegions },
+#                'underline' => 0)
    
    map_menu.add('command',
                  'label'     => "Toggle Explored",
@@ -2317,7 +2357,7 @@ def setupMenus(root)
    report_menu.add('command',
                    'label'     => "All Groups",
                    'command'   => proc { $groupList.showAllGroups },
-                   'underline' => 0)
+                   'underline' => 4)
 
    report_menu.add('command',
                    'label'     => "All Artifacts",
@@ -2327,7 +2367,7 @@ def setupMenus(root)
    report_menu.add('command',
                    'label'     => "Production By Kingdom",
                    'command'   => proc { showProductionStatsByKingdom },
-                   'underline' => 0)
+                   'underline' => 14)
 
    report_menu.add('command',
                    'label'     => "PopCenters By Region",
@@ -2342,12 +2382,12 @@ def setupMenus(root)
    report_menu.add('command',
                    'label'     => "Lost/Gained PopCenters",
                    'command'   => proc { showPopCenterChanges },
-                   'underline' => 0)
+                   'underline' => 12)
 
    report_menu.add('command',
                    'label'     => "Lost/Hired Emissaries",
                    'command'   => proc { showEmissaryChanges },
-                   'underline' => 0)
+                   'underline' => 11)
 
    report_menu.add('command',
                    'label'     => "High Council Records",
@@ -2370,6 +2410,14 @@ def drawBox(canvas,x,y,tag)
    bBox.bind('1', proc { boxClick tag } )
    bBox.bind('3', proc { markExplored tag } )
    bBox.bind('Enter', proc { $cursorLoc.value = tag.gsub('box','Area') } )
+
+   mBox = drawABlock(:medium, x,y)
+   mBox.addtag(I_AM_A_BOX)
+   mBox.addtag(tag)
+   mBox.bind('1', proc { boxClick tag } )
+   mBox.bind('3', proc { markExplored tag } )
+   mBox.bind('Enter', proc { $cursorLoc.value = tag.gsub('box','Area') } )
+
    sBox = drawABlock(:small, x,y)
    sBox.addtag(I_AM_A_BOX)
    sBox.addtag(tag)
@@ -2652,6 +2700,15 @@ def toggleExplored
    end
 end
 
+def showGroups
+   return if $toggles[:groups] == true
+   toggleGroups
+end
+
+def hideGroups
+   return if $toggles[:groups] == false
+   toggleGroups
+end
 
 def toggleGroups
    unHighlight
@@ -2659,7 +2716,7 @@ def toggleGroups
       $canvas.delete('ARMY')
       $toggles[:groups] = false
    else
-      $groupList.showAllGroups
+      $groupList.showAllGroups(false)
       $toggles[:groups] = true
    end
    $canvas.raise($currentTopTag)
@@ -2756,15 +2813,15 @@ def createTextBox(frame)
    end
 end
 
-def shrinkImage(image)
+def shrinkImage(image,subsample)
    w = image.width
    h = image.height
-   puts "w=#{w} h=#{h}"
+   #puts "w=#{w} h=#{h}"
 
    newImage = TkPhotoImage.new
    newImage.copy(image,
                  :from => [0, 0, w, h],
-                 :subsample => [3,3])
+                 :subsample => [subsample,subsample])
    w = newImage.width
    h = newImage.height
    puts "w=#{w} h=#{h}"
@@ -2774,11 +2831,15 @@ end
 def setupImage
    $bigImage = TkPhotoImage.new
    $bigImage.file = "#{$runRoot}/graphics/alamaze-resurgent.gif"
-   #$bigImage.file = "/users/jgibbs/Documents/GitHub/AlamazeTurnParser/graphics/alamaze-resurgent.gif"
    $bigW = $bigImage.width
    $bigH = $bigImage.height
+   #$bigImage.file = "/users/jgibbs/Documents/GitHub/AlamazeTurnParser/graphics/alamaze-resurgent.gif"
 
-   $smallImage = shrinkImage($bigImage)
+   $medImage = shrinkImage($bigImage,2)
+   $medW = $medImage.width
+   $medH = $medImage.height
+
+   $smallImage = shrinkImage($bigImage,3)
    $smallW = $smallImage.width
    $smallH = $smallImage.height
 end
@@ -2790,6 +2851,7 @@ def setupBM(banner,type,color)
    $kingdomBitmaps[banner] = Hash.new if $kingdomBitmaps[banner] == nil
    $kingdomBitmaps[banner][type] = Hash.new if $kingdomBitmaps[banner][type] == nil
    $kingdomBitmaps[banner][type][:big]=bigBM
+   $kingdomBitmaps[banner][type][:medium]=bigBM
    $kingdomBitmaps[banner][type][:small]=smallBM
 end
 
@@ -2802,16 +2864,31 @@ def setupKingdomBitmaps
 end
 
 
-def zoomIn
-   $canvas.configure(:scrollregion => [0,0,$bigW,$bigH])
+def zoomInBig
+   $canvas.configure(
+               :width => $medW,
+               :height => $medH,
+               :scrollregion => [0,0,$bigW,$bigH])
    $currentTopTag = 'big'
+   $canvas.raise($currentTopTag)
+end
+
+def zoomInMedium
+   $canvas.configure(
+               :width => $medW,
+               :height => $medH,
+               :scrollregion => [0,0,$medW,$medH])
+   $currentTopTag = 'medium'
    $canvas.raise($currentTopTag)
 end
 
 def zoomOut
    w = $smallImage.width
    h = $smallImage.height
-   $canvas.configure(:scrollregion => [0,0,$smallW,$smallH])
+   $canvas.configure(
+               :width => $smallW,
+               :height => $smallH,
+               :scrollregion => [0,0,$smallW,$smallH])
    $currentTopTag = 'small'
    $canvas.raise($currentTopTag)
    $canvas.xview('scroll', 0, 'units')
@@ -2879,11 +2956,46 @@ def createCanvas(frame)
       end
 
       $root.bind "Control-Up" do
-        zoomIn
+        zoomInMedium
       end
 
       $root.bind "Control-Down" do
         zoomOut
+      end
+
+      $root.bind "c" do
+        closeFile
+      end
+
+      $root.bind "o" do
+        openDocument
+      end
+
+      $root.bind "p" do
+        parseTurn
+      end
+
+      $root.bind "s" do
+        saveData
+      end
+
+      $root.bind "Control-s" do
+        saveData
+      end
+
+      $root.bind "Control-S" do
+        saveAsData
+      end
+
+      $root.bind "g" do
+        toggleGroups
+      end
+
+      $root.bind "e" do
+        toggleExplored
+      end
+      $root.bind "x" do
+        toggleExplored
       end
 end # end create canvas
 
@@ -2896,8 +3008,19 @@ def initOffsets
    $offsets[:big][:boxY]=60.45
    $offsets[:big][:tag]='big'
    $offsets[:big][:font]= TkFont.new( "size" => '30', "weight" => "bold")
-   $offsets[:big][:thickLine]=12
-   $offsets[:big][:thinLine]=7
+   $offsets[:big][:thickLine]=12 
+   $offsets[:big][:thinLine]=7 
+
+   $offsets[:medium] = Hash.new
+   $offsets[:medium][:frameX]=26
+   $offsets[:medium][:frameY]=20
+   $offsets[:medium][:boxX]=40.30
+   $offsets[:medium][:boxY]=30.15
+   $offsets[:medium][:tag]='medium'
+   $offsets[:medium][:font]= TkFont.new( "size" => '15', "weight" => "bold")
+   $offsets[:medium][:thickLine]=12 * 2.0/3.0
+   $offsets[:medium][:thinLine]=7 * 2.0/3.0
+
    $offsets[:small] = Hash.new
    $offsets[:small][:frameX]=17
    $offsets[:small][:frameY]=14
@@ -2961,7 +3084,9 @@ def drawABlock(size,x,y)
                                   $offsets[size][:frameY] + ($offsets[size][:boxY]*y),
                                   $offsets[size][:frameX] + ($offsets[size][:boxX]*(x+1)),
                                   $offsets[size][:frameY] + ($offsets[size][:boxY]*(y+1)),
-                                  :outline => BOX_OUTLINE_NORMAL, :tags=>[I_AM_A_BOX,  $offsets[size][:tag] ])
+                                  :outline => BOX_OUTLINE_NORMAL, 
+                                  :state => 'hidden', 
+                                  :tags=>[I_AM_A_BOX,  $offsets[size][:tag] ])
   return box
 end
 
@@ -2969,8 +3094,12 @@ end
 def addRedBlock(loc)
    x = loc[0].ord - 'A'.ord
    y = loc[1].ord - 'A'.ord
-   drawABlock(:big, x, y)
+   box=drawABlock(:big, x, y)
+   box.configure('fill' => 'red')
+   box=drawABlock(:medium, x, y)
+   box.configure('fill' => 'red')
    drawABlock(:small, x, y)
+   box.configure('fill' => 'red')
 end
 
 
@@ -3025,7 +3154,8 @@ def createMainDisplay(root)
 
    createCanvas(cFrame)
    fillGrid
-   zoomOut
+   #zoomOut
+   zoomInMedium
    #createTextBox(tFrame)
    createSearchParts(sFrame)
 
@@ -3033,7 +3163,7 @@ def createMainDisplay(root)
    $canvas.pack
    cFrame.pack('side' => 'left' )
    sFrame.pack('side' => 'right', 'fill' => 'both', 'expand' => 1 )
-   csFrame.pack('side' => 'top', 'fill' => 'x', 'expand' => 0 )
+   csFrame.pack('side' => 'top', 'fill' => 'both', 'expand' => 1 )
    tFrame.pack('side' => 'top' , 'fill' => 'both' , 'expand' => 1)
 
 
@@ -3047,14 +3177,16 @@ def closeFile
    initVars
    addMapImages
    fillGrid
-   zoomOut
+   #zoomOut
+   zoomInMedium
    clearText
    $currentOpenFile = nil
 end
 
 def addMapImages
-   TkcImage.new($canvas,$smallW/2,$smallH/2, 'image' => $smallImage, :tags => 'small')
    TkcImage.new($canvas,$bigW/2,$bigH/2, 'image' => $bigImage, :tags => 'big')
+   TkcImage.new($canvas,$medW/2,$medH/2, 'image' => $medImage, :tags => 'medium')
+   TkcImage.new($canvas,$smallW/2,$smallH/2, 'image' => $smallImage, :tags => 'small')
 end
 
 def initVars
@@ -3089,7 +3221,7 @@ def initVars
    $unusualSightings = UnSightingInfo.new
    $toggles = Hash.new
    $toggles[:explored]=true
-   $toggles[:groups]=false
+   $toggles[:groups]=true
    setupImage
 end
 
@@ -3117,6 +3249,10 @@ begin
    appendText("pdfReaderLoaded=#{$pdfReaderLoaded}\n")
    
    tweakVolume
+
+   #addRedBlock('AA')
+   #addRedBlock('BB')
+   #addRedBlock('ZZ')
 
    if not defined?(Ocra) 
       Tk.mainloop

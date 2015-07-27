@@ -129,7 +129,7 @@ class EmmyToolWindow
 
       scroll = nil
       tb = TkText.new(bottomFrame) {
-         height   '15'
+         height   '20'
          width   '80'
          font   textFont
          background 'lightgrey'
@@ -269,8 +269,10 @@ class EmmyToolWindow
          appendText( line, $emmyTextBox)
       end
 
-      appendText("\nNOTE: For cases where you see maybe please consult the Frost Lord tool.", $emmyTextBox)
-      appendText("\nNOTE: Assumes worst case, but does not take into account any Staus Quo orders.", $emmyTextBox)
+      appendText("\nNOTE: The values in this table are only a rough guide. It tends to", $emmyTextBox)
+      appendText("\nNOTE: assumes worst case, but does not take into account any Staus Quo orders.", $emmyTextBox)
+      appendText("\nNOTE: For more accurate predictions, please consult the Frost Lord tool.", $emmyTextBox)
+      appendText("\nNOTE: You can find a link to that tool on the Order Entry page.", $emmyTextBox)
       tagText($emmyTextBox, "yes",   TEXT_TAG_GOOD)
       tagText($emmyTextBox, "HERE!",   TEXT_TAG_GOOD)
       tagText($emmyTextBox, "maybe", TEXT_TAG_WARNING)

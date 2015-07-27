@@ -35,7 +35,9 @@ class UnSightingInfo
       bigImage = TkPhotoImage.new
       bigImage.file = @graphicsFile
       @images[:big] =  bigImage
-      @images[:small] = shrinkImage(bigImage)
+      medImage = shrinkImage(bigImage,2)
+      @images[:medium] =  medImage
+      @images[:small] = shrinkImage(bigImage,3)
    end
 
 #  def addMapImages(canvas, loc)

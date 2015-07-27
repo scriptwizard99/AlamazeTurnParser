@@ -1,5 +1,5 @@
 =begin
-    Alamaze Data Miner - This is a GUI for displaying data parsed out
+    Alamaze Turn Parser - This is a GUI for displaying data parsed out
     from pdf turn results from the Alamaze PBEM game.
 
     Copyright (C) 2014  Joseph V. Gibbs III
@@ -242,7 +242,7 @@ end # end class GroupMovementPlotter
 def drawCurvyLine(uniqueTag, areaList)
    $canvas.delete(uniqueTag)
    return if areaList.size < 2
-   [:small,:big].each do |size|
+   [:small,:medium, :big].each do |size|
       locList = Array.new
       areaList.each do |area|
          locList.push( getCenter(area,size))

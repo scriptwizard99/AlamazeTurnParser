@@ -10,6 +10,7 @@
 *.out
 dist/
 saves
+parserGuiError.txt
 
 # sample data
 /sampleHTML/

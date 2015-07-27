@@ -1576,6 +1576,16 @@ def showEmissary(area,target,showHeader,targetTurn)
    return outputLines
 end
 
+def showBattleReport(area, showHeader)
+   if showHeader == true
+      appendTextWithTag("\nBattles That Occurred Here:\n", TEXT_TAG_TITLE)
+      $battleList.showBattleHeader
+   end
+
+   $battleList.showBattles(area)
+
+end
+
 def showArmyHeader
    $groupList.showArmyHeader
 #  appendText("Trn Source  Area KI Name Size        Archer  Foot  Horse         Leaders           Wizards\n")
@@ -2079,6 +2089,7 @@ def boxClick(loc)
    showPopCenter(loc, true)
    showEmissary(loc, nil, true, nil)
    showArmyGroup(loc, nil, true, nil)
+   showBattleReport(loc,true)
    showUnusualSightings(loc,true)
    $textBox.focus
 
@@ -2397,6 +2408,11 @@ def setupMenus(root)
                    'label'     => "PopCenters By Region",
                    'command'   => proc { showPopCentersByRegion },
                    'underline' => 0)
+
+   report_menu.add('command',
+                   'label'     => "All Battles",
+                   'command'   => proc { $battleList.showAllBattles },
+                   'underline' => 4)
 
    report_menu.add('command',
                    'label'     => "Threatened Production",

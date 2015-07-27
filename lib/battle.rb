@@ -41,7 +41,7 @@ class BattleList
    end
 
    def addBattle(line)
-      (turn,junk,area,attacker,defender)=line.split(',')
+      (turn,junk,area,attacker,defender)=line.strip.split(',')
       @list.push BattleInfo.new(turn,area,attacker,defender)
       return @list.last
    end
@@ -52,12 +52,40 @@ class BattleList
      return img
    end
 
+   def showBattleHeader
+      appendTextWithTag("Trn Area              Attacker                                       Defender   \n",TEXT_TAG_HEADING)
+      appendTextWithTag("--- ---- ----------------------------------------   ----------------------------------------\n",TEXT_TAG_HEADING)
+   end
+
    def showAllBattles(printReport=true)
       unHighlight
+      if printReport
+         clearText
+         appendTextWithTag("History of All Known Battles\n\n",TEXT_TAG_TITLE)
+         showBattleHeader
+      end
       @list.each do |battle|
          turn = battle.getTurn
+         line = battle.toString
          if turn == $currentTurn
+            appendText(line) if printReport
             addMapMarker( battle.getLocation, "B")
+         else
+            appendTextWithTag(line, TEXT_TAG_STALE) if printReport
+         end
+      end
+      $canvas.raise($currentTopTag)
+   end
+
+   def showBattles(area)
+      @list.each do |battle|
+         next if battle.getLocation != area
+         turn = battle.getTurn
+         line = battle.toString
+         if turn == $currentTurn
+            appendText(line) 
+         else
+            appendTextWithTag(line, TEXT_TAG_STALE) unless $history.value.to_i == HISTORY_CURRENT
          end
       end
    end
@@ -88,6 +116,10 @@ class BattleInfo
 
    def getDefender
       return @defender
+   end
+
+   def toString
+      return sprintf("%3s %3s   %-40s   %-40s\n",@turn, @loc, @attacker, @defender)
    end
 
 end # class BattleInfo

@@ -1175,6 +1175,7 @@ end
 def unHighlightTag(tag)
   $canvas.itemconfigure(tag, 
                         'width' => 1,
+                        'state' => 'hidden',
                         'outline' => BOX_OUTLINE_NORMAL)
 end
 
@@ -1191,6 +1192,7 @@ def highlightTag(tag, clearOtherHighlights)
   #$canvas.itemconfigure('Marker', 'fill' =>'black' ) 
   $canvas.itemconfigure(tag, 
                         'width' => 3,
+                        'state' => 'normal',
                         'outline' => BOX_OUTLINE_HIGHLIGHTED)
                         #'fill' => 'green')
    $canvas.raise($currentTopTag)
@@ -2000,10 +2002,12 @@ def addSizedMarker(size,x,y,marker,markerText,loc,banner)
 
    m.bind('1', proc { boxClick loc } )
    m.bind('3', proc { |x,y| rightClickMarker(x,y,loc,marker) }, "%X %Y" )
+   m.bind('Enter', proc { $cursorLoc.value = loc } )
    
    unless t.nil?
       t.bind('1', proc { boxClick loc } ) 
       t.bind('3', proc { |x,y| rightClickMarker(x,y,loc,marker) }, "%X %Y" ) 
+      t.bind('Enter', proc { $cursorLoc.value = loc } )
    end
 end
 
@@ -3080,7 +3084,9 @@ def drawABlock(size,x,y)
                                   $offsets[size][:frameY] + ($offsets[size][:boxY]*y),
                                   $offsets[size][:frameX] + ($offsets[size][:boxX]*(x+1)),
                                   $offsets[size][:frameY] + ($offsets[size][:boxY]*(y+1)),
-                                  :outline => BOX_OUTLINE_NORMAL, :tags=>[I_AM_A_BOX,  $offsets[size][:tag] ])
+                                  :outline => BOX_OUTLINE_NORMAL, 
+                                  :state => 'hidden', 
+                                  :tags=>[I_AM_A_BOX,  $offsets[size][:tag] ])
   return box
 end
 

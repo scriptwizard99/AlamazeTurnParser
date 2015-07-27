@@ -1,5 +1,13 @@
 Release Notes for the Alamaze Turn Parser
 
+Version 1.9.4
+--------------------------------------------------------------------------------
+- Updated the grid boxes to be hidden when not highlighted.
+  That makes the region borders easier to see, even on the small map.
+- Added bindingd to the groups and pop centers so that the location text at
+  the bottom of the window would update. That binding had been on the grid boxes,
+  but with them gone, there was no location information to display.
+
 Version 1.9.3
 --------------------------------------------------------------------------------
 - Updated disclaimer at the bottom of the Emissary Tool to be more clear.

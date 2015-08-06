@@ -23,50 +23,184 @@
 
 require 'net/http'
 require 'digest'
+require 'logger'
+
+#----------------------------------- CONSTANTS --------------------------
+ARCHIVE_DIR="archive"
+CONFIG_URL="http://fallofromegame.com/alamazeorders/downloads/bananaConfig.txt"
+CONFIG_FILE="bananaConfig.txt"
+UPDATER_BINARY=ENV['OCRA_EXECUTABLE'] 
+DOC_FILE="TurnParserInstructions.doc"
+#------------------------------------------------------------------------
+
+#-----------------------------------  GLOBALS  --------------------------
+$LOG=nil
+$configInfo=nil
+#------------------------------------------------------------------------
+
+def echoLog(msg)
+   printf("%s\n", msg)
+   $LOG.info(msg)
+end
 
 # Must open output file for writing in BINARY mode
-def downloadFile(uri,size,outputFile)
+def downloadFile(url,sizeStr,outputFile)
 
-   printf("Downloading %s into %s\n", uri, outputFile)
+   size = sizeStr.to_i
+   uri = URI(url)
+   echoLog("Downloading %s into %s"% [uri, outputFile])
    numBytes=0
    Net::HTTP.start(uri.host, uri.port) do |http|
+
      request = Net::HTTP::Get.new uri.request_uri
-   
      http.request request do |response|
+     
+       # Check reponse to see if there is anything to download
        if  response.is_a?(Net::HTTPSuccess)
-          printf("Good response\n")
+          $LOG.info("Good response")
        else
-          printf("Bad response: %s\n", response.message)
-          return
+          $LOG.error("Download failed! response(%s)"%response.message)
+          printf("Download failed! Response from server: %s\n", response.message)
+          return false
        end
+
+       # Download body of response into file
        open outputFile, 'wb' do |io|
          response.read_body do |chunk|
            io.write chunk
            numBytes += chunk.size
            percent =  100 * numBytes / size
            printf("Percent Complete : %6.2f\r", percent)
-         end
-       end
-     end
-   end
+         end # do chunk
+       end # do io
+     end # do response
+   end # do http
+
+   $LOG.info("Download complete. Size=%d bytes"% numBytes)
    printf("Percent Complete : %6.2f\r", 100.00)
    printf("\ndone.\nSize=%d bytes\n",numBytes)
+   return true
+end
+
+def setupArchive
+   echoLog("Running in %s" % Dir.pwd)
+   if Dir.exist?(ARCHIVE_DIR)
+     $LOG.info("Archive dir(%s) already exists"%ARCHIVE_DIR)
+   else
+     $LOG.info("Creating archive dir(%s)"%ARCHIVE_DIR)
+     Dir.mkdir(ARCHIVE_DIR)
+   end
+end
+
+def fetchConfig
+   # TODO Ask user if they want to check for updates. Skip if not.
+   echoLog("Fetching configuration")
+   cfgSize="500" # roughly
+   success = downloadFile(CONFIG_URL, cfgSize, CONFIG_FILE)
+   success = readConfig if success
+   return success
+end
+
+def readConfig
+   $configInfo=Hash.new
+   File.new(CONFIG_FILE).each_line do |line|
+      line.chomp!
+      $LOG.info("CFG : %s" % line)
+      (key,val)=line.split('=')
+      $configInfo[key]=val
+   end
+   
+   return true
+end
+
+def getMD5Sum(targetFile)
+   return 0 if not File.exist?(targetFile)
+   data1=IO.binread(targetFile)
+   md5 = Digest::MD5.hexdigest(data1)
+   $LOG.info("file(%s) md5sum(%s)"% [targetFile,md5])
+   return md5
+end
+
+def checkMD5Sum(targetFile,targetSum)
+   actualSum=getMD5Sum(targetFile)
+   $LOG.info("Checking MD5 for file(%s) target(%s) actualSum(%s)" % [targetFile,targetSum,actualSum])
+   return actualSum == targetSum
+end
+
+# Returns false is need to update updater
+def checkUpdater
+   if UPDATER_BINARY == nil
+      echoLog("Running as script, not ocra binary. Skipping updater check.")
+      return true
+   end
+   echoLog("Checking for updates to the updater itself")
+   matches = checkMD5Sum(UPDATER_BINARY, $configInfo['updaterMD5'] )
+   if matches
+      echoLog("Updator binary is OK. We can continue.")
+      return true
+   else
+      echoLog("Please delete and re-download updater.")
+      return false
+   end
+end
+
+def downloadDoc
+   url=$configInfo['documentURL'];
+   size=$configInfo['documentSize'];
+   version=$configInfo['documentVersion'];
+   success = downloadFile(url,size,DOC_FILE)
+   if success 
+      matches = checkMD5Sum( DOC_FILE, $configInfo['documentMD5'] )
+      if matches
+         echoLog("New doc file version(%s) download successful" % version)
+      else
+         echoLog("Downloaded doc file is corrupt")
+      end
+   else
+      echoLog("Failure downloading new doc file")
+   end
+end
+
+def checkDoc
+   matches = checkMD5Sum( DOC_FILE, $configInfo['documentMD5'] )
+   if matches
+      echoLog("Doc file OK")
+   else
+      echoLog("Need to download new doc file")
+      downloadDoc
+   end
 end
 
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<< START >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-#uri = URI('http://fallofromegame.com/alamazeorders/downloads/TurnParserInstructions.doc')
-#uri = URI('http://fallofromegame.com/alamazeorders/downloads/parserGUI.exe')
-uri = URI('http://fallofromegame.com/alamazeorders/downloads/bananaConfig.txt')
+$LOG=Logger.new('updaterLog.out')
+$LOG.info("====================== S T A R T ======================")
 
-#size=2153472
-size=7911904
-outputFile='download.out'
+#if not defined?(Ocra)
 
-downloadFile(uri,size, outputFile)
+   begin
 
-# Must open input file for reading in BINARY mode
-data1=IO.binread(outputFile)
-md5 = Digest::MD5.hexdigest(data1)
-printf("md5sum=%s\n", md5)
+      setupArchive
+      doUpdate = fetchConfig
+      if doUpdate
+         continue = checkUpdater 
+         if continue
+            checkDoc
+         end
+      else
+         echoLog("Proceeding without checking for updates")
+      end
 
+   rescue Exception => e
+      printf("CAUGHT EXCEPTION! CHECK LOG FOR DETAILS")
+      $LOG.error("Caught exception")
+      $LOG.error(e)
+   end
+
+#else
+#   puts "Detected that ocra is building script. Skipping main part"
+#end
+
+sleep 10
+$LOG.info("====================== E N D ======================")
+exit 0

@@ -31,6 +31,9 @@ CONFIG_URL="http://fallofromegame.com/alamazeorders/downloads/bananaConfig.txt"
 CONFIG_FILE="bananaConfig.txt"
 UPDATER_BINARY=ENV['OCRA_EXECUTABLE'] 
 DOC_FILE="TurnParserInstructions.doc"
+GUI_FILE="parserGUI.exe"
+LOG_FILE="updaterLog.out"
+SUPPORT_EMAIL="support@alamaze.com and scriptwizard99@gmail.com"
 #------------------------------------------------------------------------
 
 #-----------------------------------  GLOBALS  --------------------------
@@ -161,6 +164,30 @@ def downloadDoc
    end
 end
 
+def downloadGUI
+   url=$configInfo['programURL'];
+   size=$configInfo['programSize'];
+   version=$configInfo['programVersion'];
+   success = downloadFile(url,size,GUI_FILE)
+   if success
+      matches = checkMD5Sum( GUI_FILE, $configInfo['programMD5'] )
+      if matches
+         echoLog("New GUI version(%s) download successful" % version)
+         # Make sure everyone can run the thing
+         cmd="icacls #{GUI_FILE} /grant:r -F"
+         system(cmd)
+      else
+         echoLog("Downloaded GUI file is corrupt")
+         success = false
+      end
+   else
+      echoLog("Failure downloading new GUI file")
+      success = false
+   end
+   return success
+end
+
+
 def checkDoc
    matches = checkMD5Sum( DOC_FILE, $configInfo['documentMD5'] )
    if matches
@@ -171,24 +198,55 @@ def checkDoc
    end
 end
 
+def checkGUI
+   success = true
+   matches = checkMD5Sum( GUI_FILE, $configInfo['programMD5'] )
+   if matches
+      echoLog("GUI OK")
+   else
+      echoLog("Need to download new GUI")
+      success = downloadGUI
+   end
+   return success
+end
+
+def runGUI
+   echoLog("Kicking off GUI")
+   cwd=Dir.pwd
+   pid = Process.spawn("#{cwd}/#{GUI_FILE}")
+   Process.detach(pid)
+end
+
 #<<<<<<<<<<<<<<<<<<<<<<<<<<<< START >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-$LOG=Logger.new('updaterLog.out')
+$LOG=Logger.new(LOG_FILE)
 $LOG.info("====================== S T A R T ======================")
 
 #if not defined?(Ocra)
 
    begin
 
+      okToRun = true
       setupArchive
       doUpdate = fetchConfig
       if doUpdate
          continue = checkUpdater 
          if continue
             checkDoc
+            okToRun= checkGUI
+          else
+            okToRun= false
          end
       else
          echoLog("Proceeding without checking for updates")
+      end
+
+ 
+      if okToRun
+         runGUI 
+      else
+         echoLog("Did not attempt to kick off GUI due to update problems.")
+         echoLog("Please send #{LOG_FILE} to #{SUPPORT_EMAIL}")
       end
 
    rescue Exception => e

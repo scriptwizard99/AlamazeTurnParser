@@ -1,0 +1,11 @@
+updaterURL=http://fallofromegame.com/alamazeorders/downloads/bananaConfig.txt
+updaterMD5=df3619979d2c1034595745fbd9f5c8f1
+updaterVersion=1.0.0
+programURL=http://fallofromegame.com/alamazeorders/downloads/parsergui.exe
+programMD5=df3619979d2c1034595745fbd9f5c8f2
+programVersion=1.9.4
+documentURL=http://fallofromegame.com/alamazeorders/downloads/TurnParserInstructions.doc
+documentMD5=df3619979d2c1034595745fbd9f5c8f5
+documentVersion=2.0.0
+programSize=7911904
+documentSize=2153472

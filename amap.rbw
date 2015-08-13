@@ -1413,11 +1413,13 @@ end
 
 #[@turnNumber,"R",'Self',r[:name],regionNum,r[:reaction],r[:controller]].join(',')
 def addRegion(line)
+   $passThroughRecords.push line
    (turn,x,x,name,num,reaction,controller,refBanner)=line.chomp.split(',')
    $regionList.addTurn(turn,num,reaction,controller,refBanner)
 end
 
 def addHighCouncil(line)
+   $passThroughRecords.push line
    $highCouncilList.addIssue(line)
 end
 
@@ -1429,6 +1431,7 @@ end
 #@turnNumber,"A",artifact[:source],artifact[:area],artifact[:fullName],artifact[:shortName],
 #                                artifact[:posessor],artifact[:type],artifact[:statusPts]].join(',')
 def addArtifact(line)
+   $passThroughRecords.push line
    $artifactList.addArtifact(line)
 end
 
@@ -1926,10 +1929,10 @@ def saveDocument(filename)
    $popCenterList.saveDataToFile(ofile)
    $emissaryList.saveDataToFile(ofile)
    $groupList.saveDataToFile(ofile)
-   $artifactList.saveDataToFile(ofile)
-   $regionList.saveDataToFile(ofile)
+#  $artifactList.saveDataToFile(ofile)              # now passthrough
+#  $regionList.saveDataToFile(ofile)                # now passthrough
    $unusualSightings.saveDataToFile(ofile)
-   $highCouncilList.saveDataToFile(ofile)
+#  $highCouncilList.saveDataToFile(ofile)           # now passthrough
 
    $passThroughRecords.each do |line|
       ofile.puts line

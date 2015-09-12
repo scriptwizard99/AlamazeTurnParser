@@ -1,5 +1,11 @@
 Release Notes for the Alamaze Turn Parser
 
+Version 1.9.4+
+--------------------------------------------------------------------------------
+- Lines for Group Movement Plotter do not disappear when changing groups
+  - They are not saved, but they will stay there until file is closed.
+  - Instead of black, they are now the kingdom's color.
+
 Version 1.9.4
 --------------------------------------------------------------------------------
 - Updated the grid boxes to be hidden when not highlighted.

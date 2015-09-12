@@ -28,6 +28,8 @@ class GroupMovementPlotter
       @undoButton=nil
       @areaLabel=nil
       @areaList=Array.new
+      @gname=nil
+      @color='black'
    end
 
    def createDialog
@@ -166,21 +168,22 @@ class GroupMovementPlotter
    end # end createDialog
 
    def enterGroupName()
-      gname = @entry.get.strip.upcase
-      $gmPlotter.configure('title' => "Group Movement Plotter (#{gname})")
+      @gname = @entry.get.strip.upcase
+      $gmPlotter.configure('title' => "Group Movement Plotter (#{@gname})")
 
-      gid="#{gname[1,2]}-#{gname[0,3]}"
+      gid="#{@gname[1,2]}-#{@gname[0,3]}"
       group = $groupList.getGroupByID(gid)
       if group.nil? 
          appendText("Invalid group ID #{gid}\n")
          return
       end
+      @color=$kingdomColors[@gname[1,2]];
       groupLoc = group.getLocOnTurn( $currentTurn )
       if groupLoc.nil?
-         appendText("Invalid loc for #{gname} on turn #{$currentTurn}\n")
+         appendText("Invalid loc for #{@gname} on turn #{$currentTurn}\n")
          return
       end
-      $canvas.delete("GroupArrow")
+      #$canvas.delete("GroupArrow")
       @areaList=[groupLoc]
       updateAreaListLabel
       highlightTag("box-#{groupLoc}", true)
@@ -251,6 +254,7 @@ def drawCurvyLine(uniqueTag, areaList)
                    :width => $offsets[size][:thickLine],
                    :splinesteps => 100,
                    :arrow => 'last',
+                   :fill =>  @color,
                    :smooth => true,
                    :tags => ['GroupArrow','Marker', uniqueTag, $offsets[size][:tag] ])
    end

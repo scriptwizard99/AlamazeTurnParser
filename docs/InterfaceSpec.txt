@@ -23,6 +23,7 @@ E - emissary
 G - group
 H - high council
 I - imfo or influence
+K - eye candy
 M - marker. map annotation
 O - owned popcenter list
 P - popupation center

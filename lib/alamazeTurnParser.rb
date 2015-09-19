@@ -868,29 +868,52 @@ class AlamazeTurnParser
   def collectEmissaryLocations(line)
      #puts "[01234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789]"
      #printf("[%s]\n",line)
-     return if line.include? "TITLE"
-     rank = line[4,16].strip
-     return if rank.empty?
-     name = line[20,22].strip
-     (x,kingdom,x,x3,area,x4)=line[43..line.size].split
-     @banner=fixBanner(kingdom[0,2]) if rank == "KING" or rank == "REGENT" or rank == "QUEEN"
-     if rank == "CONSUL"
-        #@banner="AN" if line.match(/ANCIENT ONES/)
-        @banner="AN" 
-     end
-     area = x4 if area == 'AT' and x4.size == 2
-     if area.size != 2
-        printf("WARNING: problem parsing the following line. Skipping.\n%s\n", line)
+     if line.include? "TITLE"
+        @tempEmissaryAction=""
+        @tempEmissaryName=nil
         return
      end
 
-     @emissaryInfo=Hash.new if @emissaryInfo == nil
-     @emissaryInfo[name]=Hash.new if @emissaryInfo[name] == nil
-     @emissaryInfo[name]['banner']=@banner
-     @emissaryInfo[name]['rank']=rank
-     @emissaryInfo[name]['area']=area
-     @emissaryInfo[name]['source']="Self"
+     rank = line[4,16].strip
+     if rank.empty?
+        @tempEmissaryAction=[@tempEmissaryAction.strip, line.strip].join(' ').strip
+        return
+     else
 
+        # We found an emissary, so first update the previous emissary
+        # with the activity text we have been collecting.
+        unless @tempEmissaryName.nil?
+           @tempEmissaryAction.tr!(',',' ') # remove any commas
+           @emissaryInfo[@tempEmissaryName]['activity']=@tempEmissaryAction unless @tempEmissaryName.nil?
+           @tempEmissaryAction=""
+           @tempEmissaryName=nil
+        end
+
+        name = line[20,22].strip
+        (x,kingdom,x,x3,area,x4)=line[43..line.size].split
+        @banner=fixBanner(kingdom[0,2]) if rank == "KING" or rank == "REGENT" or rank == "QUEEN"
+        if rank == "CONSUL"
+           #@banner="AN" if line.match(/ANCIENT ONES/)
+           @banner="AN" 
+        end
+        area = x4 if area == 'AT' and x4.size == 2
+        if area.size != 2
+           printf("WARNING: problem parsing the following line. Skipping.\n%s\n", line)
+           return
+        end
+   
+        @emissaryInfo=Hash.new if @emissaryInfo == nil
+        @emissaryInfo[name]=Hash.new if @emissaryInfo[name] == nil
+        @emissaryInfo[name]['banner']=@banner
+        @emissaryInfo[name]['rank']=rank
+        @emissaryInfo[name]['area']=area
+        @emissaryInfo[name]['source']="Self"
+
+        # Save off the emissary's name so we know where
+        # to stick the activity text we will collect
+        @tempEmissaryName=name
+
+     end
 
      # We can pull some population center information from these lines as well.
      md=line.match(/.* THE (.*) AT (\w\w) IN \w+/)
@@ -1008,10 +1031,10 @@ class AlamazeTurnParser
   # Just print out the information stored in the emissary info hash
   # Fields are separated by commas (CSV)
   def showEmissaryInfo(ofile=$stdout)
-     ofile.printf("Turn,Record Type,Data Source,Map Location,Kingdom,Name,Rank\n")
+     ofile.printf("Turn,Record Type,Data Source,Map Location,Kingdom,Name,Rank,Activity\n")
      @emissaryInfo.keys.sort.each {|name|
         e=@emissaryInfo[name]
-        record=[@turnNumber,"E",e['source'],e['area'],e['banner'],name,e['rank']].join(',')
+        record=[@turnNumber,"E",e['source'],e['area'],e['banner'],name,e['rank'],e['activity']].join(',')
         ofile.puts record
      }
   end

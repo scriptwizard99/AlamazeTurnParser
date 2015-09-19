@@ -898,12 +898,13 @@ class EmissaryList
       @list=Hash.new
    end
    def addEmissary(line)
-      (turn,x,source,area,banner,name,rank)=line.split(',')
+      (turn,x,source,area,banner,name,rank,activity)=line.split(',')
       id="#{banner}-#{name}"
       if @list[id] == nil
          @list[id] = Emissary.new(banner,name)
       end # if new emissary
-      @list[id].addTurn(turn,rank.strip,area,source)
+      activity.chomp! if activity
+      @list[id].addTurn(turn,rank.strip,area,source,activity)
    end
    def getEmissaryNotOfKingdom(banner, politicalOnly)
       emList = Array.new
@@ -946,8 +947,8 @@ class EmissaryList
       return emList
    end
    def showEmHeader
-      appendTextWithTag("Trn Source    Area KI          Name               Rank\n",TEXT_TAG_HEADING)
-      appendTextWithTag("--- --------- ---- -- ------------------------- ---------\n",TEXT_TAG_HEADING)
+      appendTextWithTag("Trn Source    Area KI          Name                  Rank                   Activity\n",TEXT_TAG_HEADING)
+      appendTextWithTag("--- --------- ---- -- ------------------------- --------------- -----------------------------------\n",TEXT_TAG_HEADING)
    end
    def getEmissaryByID(id)
       return @list[id]
@@ -956,6 +957,15 @@ class EmissaryList
       @list.each do |area,emissary|
             emissary.saveDataToFile(ofile)
       end
+   end
+
+   def getReconList
+      reconList=Array.new
+      @list.each do |area,emissary|
+         target = emissary.getRecon
+         reconList.push target unless target.nil?
+      end
+      return reconList
    end
 end
 
@@ -969,12 +979,13 @@ class Emissary
       @turnInfo = Hash.new
       @turnList = nil
    end
-   def addTurn(turn,rank,area,source)
+   def addTurn(turn,rank,area,source,activity)
       if @turnInfo[turn] == nil
          @turnInfo[turn] = Hash.new
          @turnInfo[turn][:rank] = rank
          @turnInfo[turn][:area] = area
          @turnInfo[turn][:source] = source
+         @turnInfo[turn][:activity] = activity
          @turnList = nil # force it to be recomputed later
          $areaList.addEmissary( getID(), area )
       else
@@ -1014,6 +1025,22 @@ class Emissary
    def getRank(turn)
       return @turnInfo[turn][:rank]
    end
+   def getActivity(turn)
+      if @turnInfo[turn].nil?
+         return nil 
+      else
+         return @turnInfo[turn][:activity]
+      end
+   end
+   def getRecon
+      activity=getActivity($currentTurn)
+      return nil if activity.nil?
+      if match=activity.match(/RECON MISSION OF (\S\S)\./)
+         return match[1]
+      else
+         return nil
+      end
+   end
    def getID
        return "#{@banner}-#{@name}"
    end
@@ -1044,19 +1071,20 @@ class Emissary
             return("")
          end
       end
-      line=sprintf("%3d %-9s  %2.2s  %2s %-25s %s\n", 
+      line=sprintf("%3d %-9s  %2.2s  %2s %-25s %-15s %s\n", 
                       turn, 
                       @turnInfo[turn][:source], 
                       @turnInfo[turn][:area], 
                       @banner,
                       @name, 
-                      @turnInfo[turn][:rank])
+                      @turnInfo[turn][:rank],
+                      @turnInfo[turn][:activity])
       return line
    end # toString
    def saveDataToFile(ofile)
       getTurns.each do |turn|
               e = @turnInfo[turn]
-              record=[turn,"E",e[:source],e[:area],@banner,@name,e[:rank]].join(',')
+              record=[turn,"E",e[:source],e[:area],@banner,@name,e[:rank],e[:activity]].join(',')
               ofile.puts record
       end
    end # save data to file

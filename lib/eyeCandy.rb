@@ -24,26 +24,46 @@
 
 CANDY_MARKER='K'
 
+CANDY_TYPE_EYE='eye'
+CANDY_TYPE_DAGGER='dagger'
+CANDY_TYPE_CLOAK='cloak'
+
+$eyeCandyTypes = [ CANDY_TYPE_EYE, CANDY_TYPE_DAGGER, CANDY_TYPE_CLOAK ]
+
 class EyeCandyList
 
 
    def initialize()
-      @list=Hash.new
+      @iconList=Hash.new
+      $eyeCandyTypes.each do |type|
+         @iconList[type]=EyeCandyIcon.new(type)
+      end
+      @infoList=Array.new
    end
 
 
-   def addEyeCandy(line)
-      (turn,junk,area,attacker,defender)=line.strip.split(',')
-      @list.push EyeCandyInfo.new(turn,area,attacker,defender)
-      return @list.last
+   def drawEyeCandy(size,x,y,loc,type)
+      @iconList[type].drawEyeCandy(size,x,y,loc)
    end
 
- 
+   def addEyeCandy(turn,loc,type)
+      @infoList.push EyeCandyInfo.new(turn,loc,type)
+   end
+
+   def showAllCandy
+      @infoList.each do |candy|
+         turn = candy.getTurn
+         if turn == $currentTurn
+            addMapMarker( candy.getLocation, CANDY_MARKER, candy.getType)
+         end
+      end
+      $canvas.raise($currentTopTag)
+   end
 
 end # class EyeCandyList
 
 
-class EyeCandyInfo
+class EyeCandyIcon
    def initialize(type)
       @type = type
       @graphicsFile="#{$runRoot}/graphics/#{type}.gif"
@@ -65,8 +85,29 @@ class EyeCandyInfo
    end
 
    def drawEyeCandy(size,x,y,loc)
-     img = TkcImage.new($canvas,x,y, 'image' => @images[size], :tags => ['EyeCandy', "EyeCandy-#{@type}", 'Marker', $offsets[size][:tag] ])
+     img = TkcImage.new($canvas,x,y, 'image' => @images[size], :tags => ['EYECANDY', "EyeCandy-#{@type}", 'Marker', $offsets[size][:tag] ])
      return img
    end
 
-end # class EyeCandyInfo
+end # class EyeCandyIcon
+
+class EyeCandyInfo
+   def initialize(turn, loc, type)
+       @turn = turn
+       @loc = loc
+       @type=type
+   end
+
+   def getTurn
+      return @turn
+   end
+
+   def getLocation
+      return @loc
+   end
+
+   def getType
+      return @type
+   end
+end
+

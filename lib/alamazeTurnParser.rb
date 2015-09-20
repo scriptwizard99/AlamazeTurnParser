@@ -868,7 +868,7 @@ class AlamazeTurnParser
   def collectEmissaryLocations(line)
      #puts "[01234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789]"
      #printf("[%s]\n",line)
-     if line.include? "TITLE"
+     if line.include? "BASE & MISSION"
         @tempEmissaryAction=""
         @tempEmissaryName=nil
         return
@@ -1034,7 +1034,9 @@ class AlamazeTurnParser
      ofile.printf("Turn,Record Type,Data Source,Map Location,Kingdom,Name,Rank,Activity\n")
      @emissaryInfo.keys.sort.each {|name|
         e=@emissaryInfo[name]
-        record=[@turnNumber,"E",e['source'],e['area'],e['banner'],name,e['rank'],e['activity']].join(',')
+        activity=e['activity']
+        activity.gsub!("AWAITING FURTHER ORDERS","IDLE") unless activity.nil?
+        record=[@turnNumber,"E",e['source'],e['area'],e['banner'],name,e['rank'],activity].join(',')
         ofile.puts record
      }
   end

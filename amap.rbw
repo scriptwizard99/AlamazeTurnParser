@@ -36,6 +36,7 @@ require_relative 'lib/unusualSighting'
 require_relative 'lib/alamazeTurnParser'
 require_relative 'lib/highCouncil'
 require_relative 'lib/battle'
+require_relative 'lib/eyeCandy'
 #require 'win32/sound'
 #include Win32
 
@@ -1032,6 +1033,7 @@ class Emissary
          return @turnInfo[turn][:activity]
       end
    end
+   # returns nil or the location that was reconned
    def getRecon
       activity=getActivity($currentTurn)
       return nil if activity.nil?
@@ -1823,8 +1825,14 @@ def loadDocument(filename)
   hideBattles
   showGroups
   showBattles
+
+  $emissaryList.getReconList.each do | reconLoc |
+     $eyeCandyList.addEyeCandy($currentTurn, reconLoc, CANDY_TYPE_EYE)
+  end
+  toggleEyeCandy   #change to showEyeCandy
+
   $canvas.raise($currentTopTag)
-end
+end # end loadDocument
 
 def switchKingdoms(newBanner, quiet=false)
   appendText("Switching kingdoms to #{newBanner}\n") unless quiet
@@ -2060,6 +2068,8 @@ def addSizedMarker(size,x,y,marker,markerText,loc,banner)
       m = $unusualSightings.drawUnusualSighting(size,x,y,loc)
    elsif marker == EXPLORED_MARKER_TEMP
       m = drawTempMarker(size,x,y,loc)
+   elsif marker == CANDY_MARKER
+      m = $eyeCandyList.drawEyeCandy(size,x,y,loc,markerText)  # markerText holding eyeCandyType
    else
       m = TkcText.new($canvas, x, y, 'text' => markerText, 'tags' => [marker,loc,'Marker', $offsets[size][:tag] ],
                       'fill' => color, 'font' => $offsets[size][:font] )
@@ -2077,9 +2087,9 @@ def addSizedMarker(size,x,y,marker,markerText,loc,banner)
 end
 
 
-def addMapMarker(loc,marker)
+def addMapMarker(loc,marker,markerText="")
    return if loc == nil or loc.empty?
-   addColoredMapMarker(loc,marker,'black')
+   addColoredMapMarker(loc,marker,'black',markerText)  # markerText used as type for eye-candy
 end
 
 def addColoredMapMarker(loc,marker,banner, markerText="")
@@ -2820,6 +2830,18 @@ def toggleBattles
    $canvas.raise($currentTopTag)
 end
 
+def toggleEyeCandy
+   unHighlight
+   if $toggles[:candy] == true
+      $canvas.delete('EYECANDY')
+      $toggles[:candy] = false
+   else
+      $eyeCandyList.showAllCandy
+      $toggles[:candy] = true
+   end
+   $canvas.raise($currentTopTag)
+end
+
 def startManualEntryDialog
    dialog=ManualEntry.new()
    dialog.createDialog
@@ -3093,6 +3115,10 @@ def createCanvas(frame)
         toggleBattles
       end
 
+      $root.bind "k" do
+        toggleEyeCandy
+      end
+
       $root.bind "e" do
         toggleExplored
       end
@@ -3304,6 +3330,7 @@ def initVars
    $turns = Hash.new
    $highCouncilList = HighCouncilIssueList.new
    $battleList = BattleList.new
+   $eyeCandyList=EyeCandyList.new
    $passThroughRecords = Array.new 
    $currentTurn = 0
    $gameNumber = nil
@@ -3326,6 +3353,7 @@ def initVars
    $toggles = Hash.new
    $toggles[:explored]=true
    $toggles[:groups]=true
+   $toggles[:candy]=false
    setupImage
 end
 

@@ -91,6 +91,8 @@ class AlamazeTurnParser
   def fixBanner(banner)
      if banner == "RE"
         return "RD"
+     elsif banner == "DR"
+        return "DU"
      else
         return banner
      end
@@ -116,6 +118,8 @@ class AlamazeTurnParser
      elsif ( string.include? "Our forecast for next month" )
         @section = SECTION_FORECAST_PRODUCTION
      elsif ( string.include? "Military Naval status")
+        @section = SECTION_DONT_CARE
+     elsif ( string.include? "NAVIES:")
         @section = SECTION_DONT_CARE
      elsif ( string.include? "Our groups are outside of the following population centers")
         @section = SECTION_GROUP_FIND_PC
@@ -702,6 +706,7 @@ class AlamazeTurnParser
      return if line.include? "==="
      return if line.include? "CENSUS"
      return if line.include? "OUR KINGDOM"
+     return if line.include? "POSSESSES:"  #3rd
      line.gsub!(',','')
      #puts "[01234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789]"
      #printf("[%s]\n",line)
@@ -822,9 +827,49 @@ class AlamazeTurnParser
   end # collectMilitaryRecon
 
   def collectMilitaryReconThirdCycle(line)
+     return if line.include? "BRIGADES OF"
+     return if line.include? "RECRUITS"
+     #puts "[01234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789]"
+     #printf("[%s]\n",line)
+     (id,brigs,reg,area,rest)=line.split(' ',5)
+
+     if line.include? "INVISIBLE"
+        area=rest.split.last
+        id = "#{area}?"
+        @militaryInfo[id] = Hash.new if @militaryInfo[id] == nil
+        @militaryInfo[id][:area] = area
+        @militaryInfo[id][:banner] = "??"
+        @militaryInfo[id][:size] = "Invisible"
+        @militaryInfo[id][:source] = "Recon"
+        return
+     end
+
+     if( id.size == 3 )
+        @tempGroupInfo = Hash.new
+        @tempGroupInfo[:id]=id
+        @tempGroupInfo[:banner]=fixBanner(id[1,2])
+        @tempGroupInfo[:area]=area
+        @tempGroupInfo[:size]=brigs
+
+        @militaryInfo = Hash.new if @militaryInfo == nil
+        id= @tempGroupInfo[:id]
+        @militaryInfo[id] = Hash.new if @militaryInfo[id] == nil
+        @militaryInfo[id][:banner] = @tempGroupInfo[:banner]
+        @militaryInfo[id][:size] = @tempGroupInfo[:size]
+        @militaryInfo[id][:area] = @tempGroupInfo[:area]
+        @militaryInfo[id][:wiz1] = @tempGroupInfo[:wiz1]
+        @militaryInfo[id][:wiz2] = @tempGroupInfo[:wiz2]
+        @militaryInfo[id][:wiz3] = @tempGroupInfo[:wiz3]
+        @militaryInfo[id][:leader1] = @tempGroupInfo[:leader1]
+        @militaryInfo[id][:leader2] = @tempGroupInfo[:leader2]
+        @militaryInfo[id][:leader3] = @tempGroupInfo[:leader3]
+        @militaryInfo[id][:source] = "Recon"
+     end
   end
 
   def collectMilitaryStatus(line)
+     #puts "[01234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789]"
+     #printf("[%s]\n",line)
      case @cycle
      when CYCLE_SECOND
         collectMilitaryStatusSecondCycle(line)
@@ -834,13 +879,52 @@ class AlamazeTurnParser
   end
 
   def collectMilitaryStatusThirdCycle(line)
+     if line.include? "DECORATIONS:"
+        (num,kingdom)=line.split
+        groupID="#{num[0]}#{kingdom[0,2]}"
+        @tempGroupInfo = Hash.new
+        @tempGroupInfo[:id]=groupID
+        @tempGroupInfo[:banner]= fixBanner(kingdom[0,2])
+     end
+    
+     
+     if md=line.match(/FORCE COMPOSITION\s+\((.*)\):/)
+       @tempGroupInfo[:size]=md[1]
+     end
+
+     if line.include? "LOCATION:"
+       (x,loc)=line.split
+       @tempGroupInfo[:area]=loc
+     end
+
+     if line.include? "============"  and  @tempGroupInfo != nil
+        @militaryInfo = Hash.new if @militaryInfo == nil
+        id= @tempGroupInfo[:id]
+        @militaryInfo[id] = Hash.new if @militaryInfo[id] == nil
+        @militaryInfo[id][:banner] = @tempGroupInfo[:banner]
+        @militaryInfo[id][:size] = @tempGroupInfo[:size]
+        @militaryInfo[id][:area] = @tempGroupInfo[:area]
+        @militaryInfo[id][:region] = @tempGroupInfo[:region]
+        @militaryInfo[id][:archers] = @tempGroupInfo[:archers]
+        @militaryInfo[id][:horse] = @tempGroupInfo[:horse]
+        @militaryInfo[id][:foot] = @tempGroupInfo[:foot]
+        @militaryInfo[id][:wiz1] = @tempGroupInfo[:wiz1]
+        @militaryInfo[id][:wiz2] = @tempGroupInfo[:wiz2]
+        @militaryInfo[id][:wiz3] = @tempGroupInfo[:wiz3]
+        @militaryInfo[id][:leader1] = @tempGroupInfo[:leader1]
+        @militaryInfo[id][:leader2] = @tempGroupInfo[:leader2]
+        @militaryInfo[id][:leader3] = @tempGroupInfo[:leader3]
+        @militaryInfo[id][:source] = "Self"
+#       puts @militaryInfo[id]
+     end
+
   end
 
   #
   def collectMilitaryStatusSecondCycle(line)
      return if line.include? "XXXX"
-     puts "[01234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789]"
-     printf("[%s]\n",line)
+     #puts "[01234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789]"
+     #printf("[%s]\n",line)
      if( line.include? "GROUP:" )
         (x,num,kingdom)=line.split
         groupID="#{num[0]}#{kingdom[0,2]}"
@@ -1013,6 +1097,9 @@ class AlamazeTurnParser
     string.gsub!('</i>','')
     string.gsub!('</p>','')          #3rd
     string.gsub!(/<p .*>/,'')        #3rd
+    string.gsub!(/<img .*"\s*>/,'')  #3rd
+    string.gsub!('</a>','')          #3rd
+    string.gsub!(/<a .*>/,'')        #3rd
     #string.gsub!('<p.*>(.*)</p>','\1')
     newSection=checkSection(string)
     processLine(string) if newSection == false

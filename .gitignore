@@ -12,9 +12,6 @@ dist/
 saves
 parserGuiError.txt
 
-# sample data
-/sampleHTML/
-
 # Ruby Stuff
 *.gem
 *.rbc

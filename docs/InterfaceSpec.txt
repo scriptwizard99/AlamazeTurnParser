@@ -17,23 +17,23 @@ The rest of the data records follow.
 
 A - artifact
 B - Battles that occur
-C - color record
-D - priestesses hired (AN)
+C - color record                   (not implemented yet)
+D - priestesses hired (AN)         (not implemented yet)
 E - emissary
 G - group
 H - high council
-I - imfo or influence
+I - info or influence
 K - eye candy
-M - marker. map annotation
-O - owned popcenter list
+M - marker. map annotation         (not implemented yet)
+O - owned popcenter list           (not implemented yet)
 P - popupation center
 R - region
-S - agent hired/trained (UN)
-T - nextturn due date
+S - agent activity
+T - nextturn due date              (not implemented yet)
 U - unusual sighting
 V - version info
 X - explored no pop center
-Z - ally/enemy declarations
+Z - ally/enemy declarations        (not implemented yet)
 @ - no unusual encounter
 ! - all clear
 
@@ -44,7 +44,9 @@ Z - ally/enemy declarations
 
 
 
-
+Agent Activity
+- type (hired,trained,recon,kidnap,assassinate,sabatoge,guard,...)
+- kingdom, agent location, activity location, agent name
 
 
 

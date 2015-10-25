@@ -66,7 +66,11 @@ class AlamazeTurnParser
   SECTION_HIGH_COUNCIL=24
   SECTION_MILITARY_ENGAGEMENTS=25
 
+  CYCLE_SECOND=1
+  CYCLE_THIRD=2
+
   @section=0
+  @cycle=CYCLE_SECOND   #default for old turns and PDF
   @banner="xxxxxxx"
   @influence=0
   @turnNumber=0
@@ -127,7 +131,11 @@ class AlamazeTurnParser
         @section = SECTION_DONT_CARE
      elsif ( string.include? "has current influence ")
         stuff=string.split
-        @influence=stuff.last.strip  # This is all we want from thsi section
+        @influence=stuff.last.strip  # This is all we want from this section
+        @section = SECTION_DONT_CARE
+     elsif ( string.include? "has influence ")   #3rd
+        stuff=string.split
+        @influence=stuff.last.strip  # This is all we want from this section
         @section = SECTION_DONT_CARE
      elsif ( string.include? "We issued the following commands")
         @section = SECTION_DONT_CARE
@@ -255,6 +263,13 @@ class AlamazeTurnParser
   def processPreamble(line)
      if ( md=line.match(/--\s+Version\s+(\S+)\s+/) )
         @htmlVersion=md[1]
+        if @htmlVersion[0] == '1'
+           @cycle=CYCLE_SECOND
+        elsif @htmlVersion[0] == '2'
+           @cycle=CYCLE_THIRD
+        else
+           printf("UNKNOWN VERSION (%s)\n", @htmlVersion)
+        end
      end
 
      if ( md=line.match(/<title>(\S+)<.title>/) )
@@ -519,6 +534,14 @@ class AlamazeTurnParser
   
   end 
 
+  def collectArtifactStatus(line)
+     case @cycle
+     when CYCLE_SECOND
+        collectArtifactStatusSecondCycle(line)
+     when CYCLE_THIRD
+        collectArtifactStatusThirdCycle(line)
+     end
+  end
 #          1         2         3         4         5         6         7         8         9         0
 #01234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789
 #                                            SHORT                                     STATUS
@@ -531,7 +554,7 @@ class AlamazeTurnParser
 #          RING OF PROTECTION                18110  MAL REYNALDS           BENEVOLENT    200
 #          RING OF PROTECTION                59902  WHISPER IN THE DARK    BENEVOLENT    200
 #          KEY OF THE GEM                    36367  RIVER TAM              KING          100
-  def collectArtifactStatus(line)
+  def collectArtifactStatusSecondCycle(line)
      return if line.include? "STATUS"
      return if line.include? "POSSESSOR"
      return if line.include? "SPIES"
@@ -549,13 +572,24 @@ class AlamazeTurnParser
      @artifactInfo.push artifact
   end
 
+  def collectArtifactStatusThirdCycle(line)
+  end
+
+  def collectArtifactRecon(line)
+     case @cycle
+     when CYCLE_SECOND
+        collectArtifactReconSecondCycle(line)
+     when CYCLE_THIRD
+        collectArtifactReconThirdCycle(line)
+     end
+  end
 #          1         2         3         4         5         6         7         8         9         0
 #01234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789
 #          AREA    POSSESSOR                            FULL NAME                      SHORT NAME
 #           CD   WITCHLORD PRINCE MAL REYNALDS
 #                                                     RING OF PROTECTION                   18110
 #          OA   1ST DRUID             STAFF OF THE GREAT ORATOR          73064                                 html
-  def collectArtifactRecon(line)
+  def collectArtifactReconSecondCycle(line)
      return if line.include? "POSSESSOR"
      return if line.include? "MEMORIUM"
      return if line.include? "RESULT"
@@ -592,6 +626,9 @@ class AlamazeTurnParser
            @tempArtifactInfo = nil
         end
      end
+  end
+
+  def collectArtifactReconThirdCycle(line)
   end
 
   def processEngagementHeader(header)
@@ -721,8 +758,17 @@ class AlamazeTurnParser
      @popCenterInfo[area]['source']="Recon"
   end
 
-  #
   def collectMilitaryRecon(line)
+     case @cycle
+     when CYCLE_SECOND
+        collectMilitaryReconSecondCycle(line)
+     when CYCLE_THIRD
+        collectMilitaryReconThirdCycle(line)
+     end
+  end
+
+  #
+  def collectMilitaryReconSecondCycle(line)
      return if line.include? "BRIGADES OF"
      return if line.include? "RECRUITS"
      #puts "[01234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789]"
@@ -775,13 +821,26 @@ class AlamazeTurnParser
      end
   end # collectMilitaryRecon
 
+  def collectMilitaryReconThirdCycle(line)
+  end
 
+  def collectMilitaryStatus(line)
+     case @cycle
+     when CYCLE_SECOND
+        collectMilitaryStatusSecondCycle(line)
+     when CYCLE_THIRD
+        collectMilitaryStatusThirdCycle(line)
+     end
+  end
+
+  def collectMilitaryStatusThirdCycle(line)
+  end
 
   #
-  def collectMilitaryStatus(line)
+  def collectMilitaryStatusSecondCycle(line)
      return if line.include? "XXXX"
-     #puts "[01234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789]"
-     #printf("[%s]\n",line)
+     puts "[01234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789]"
+     printf("[%s]\n",line)
      if( line.include? "GROUP:" )
         (x,num,kingdom)=line.split
         groupID="#{num[0]}#{kingdom[0,2]}"
@@ -952,6 +1011,8 @@ class AlamazeTurnParser
     string.gsub!('<br>','')
     string.gsub!('<i>','')
     string.gsub!('</i>','')
+    string.gsub!('</p>','')          #3rd
+    string.gsub!(/<p .*>/,'')        #3rd
     #string.gsub!('<p.*>(.*)</p>','\1')
     newSection=checkSection(string)
     processLine(string) if newSection == false

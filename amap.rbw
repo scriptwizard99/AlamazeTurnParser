@@ -1851,6 +1851,7 @@ def runParser(filename,format=AlamazeTurnParser::FORMAT_HTML)
       parser.showOwnedPopCenters(ofile)
       parser.showHCInfo(ofile)
       parser.showBattles(ofile)
+      parser.showExplored(ofile)
       ofile.close
    rescue Exception => e
          appendText("Caught Exception.\n")

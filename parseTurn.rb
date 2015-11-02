@@ -78,6 +78,8 @@ begin
    parser.showHCInfo()
    puts
    parser.showBattles()
+   puts
+   parser.showExplored()
 
    logOut.puts "Parsing complete."
 

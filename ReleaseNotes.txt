@@ -5,6 +5,10 @@ Version 1.9.4+
 - Lines for Group Movement Plotter do not disappear when changing groups
   - They are not saved, but they will stay there until file is closed.
   - Instead of black, they are now the kingdom's color.
+- Parser now picks up 710, 720, and 976 orders and marks areas explored.
+  - I was too lazy to handle 715 and 725
+  - Everything is marked as 'no pc', even if there is a PC there.
+  - The last area should be marked as 'all clear', but I didn't do that yet either.
 
 Version 1.9.4
 --------------------------------------------------------------------------------

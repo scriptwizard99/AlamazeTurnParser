@@ -65,6 +65,7 @@ class AlamazeTurnParser
   SECTION_RECON_ENCOUNTERS=23
   SECTION_HIGH_COUNCIL=24
   SECTION_MILITARY_ENGAGEMENTS=25
+  SECTION_ORDERS=26
 
   @section=0
   @banner="xxxxxxx"
@@ -129,8 +130,6 @@ class AlamazeTurnParser
         stuff=string.split
         @influence=stuff.last.strip  # This is all we want from thsi section
         @section = SECTION_DONT_CARE
-     elsif ( string.include? "We issued the following commands")
-        @section = SECTION_DONT_CARE
      elsif ( string.include? "Production and Consumption Ledger")
         @section = SECTION_DONT_CARE
      elsif ( string.include? "We received the following messages")
@@ -167,6 +166,10 @@ class AlamazeTurnParser
         @section = SECTION_MILITARY_STATUS
      elsif ( string.include? "Additional intelligence for your eyes only")
         @section = SECTION_EYES_ONLY
+     elsif ( string.include? "We issued the following commands for the turn just completed")
+        @section = SECTION_ORDERS
+     elsif ( string.include? "We also executed the following Standing Orders")
+        @section = SECTION_DONT_CARE
      elsif ( string.include? "Early Strategic Objectives for")
         @section = SECTION_ESO
      elsif ( string.include? "victory conditions")
@@ -243,6 +246,8 @@ class AlamazeTurnParser
         collectPoliticalEvents(string.upcase)
      when SECTION_HIGH_COUNCIL
         collectHighCouncilInfo(string.upcase)
+     when SECTION_ORDERS
+        collectOrders(string.upcase)
      when SECTION_DONT_CARE
         # do nothing
      else
@@ -361,6 +366,17 @@ class AlamazeTurnParser
         @hcInfo[:votes]=Hash.new
      end
 
+  end
+
+  def collectOrders(line)
+     return if line.include? "ORDER"
+     return if line.include? "------"
+     (onum,group,rest)=line.split(' ',3)
+     return unless onum=="710" or onum=="720" or onum=="976"
+     rest.split.each do |area|
+       @exploredHash = Hash.new if @exploredHash.nil?
+       @exploredHash[area]=1
+     end
   end
 
   def collectRegionalSummary(line)
@@ -1072,6 +1088,13 @@ class AlamazeTurnParser
         record=[@turnNumber,"B",md[3],md[1],md[2] ].join(',')
         ofile.puts record
      end
+  end
+
+  def showExplored(ofile=$stdout)
+     return if @exploredHash.nil?
+     ofile.printf("Turn,RecordType,<comma separated list of explored areas>\n")
+     record = [@turnNumber, 'X', @exploredHash.keys ].join(',')
+     ofile.puts record
   end
 
 end

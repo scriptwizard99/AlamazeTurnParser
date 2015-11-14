@@ -1,6 +1,6 @@
 Release Notes for the Alamaze Turn Parser
 
-Version 1.9.4+
+Version 2.0.1
 --------------------------------------------------------------------------------
 - Lines for Group Movement Plotter do not disappear when changing groups
   - They are not saved, but they will stay there until file is closed.
@@ -9,6 +9,15 @@ Version 1.9.4+
   - I was too lazy to handle 715 and 725
   - Everything is marked as 'no pc', even if there is a PC there.
   - The last area should be marked as 'all clear', but I didn't do that yet either.
+
+Version 2.0.0
+--------------------------------------------------------------------------------
+- Can now process results for Third Cycle games.
+  Still alpha code (mostly untested)
+  Artifact information not processed
+  No special handling for new emissary times (is there anything to do?)
+  Colors for new kingdoms might overlap existing kingdoms.
+  Most other things *seem* to work OK, but I expect bugs.
 
 Version 1.9.4
 --------------------------------------------------------------------------------

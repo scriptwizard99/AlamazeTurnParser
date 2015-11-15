@@ -67,11 +67,8 @@ class AlamazeTurnParser
   SECTION_MILITARY_ENGAGEMENTS=25
   SECTION_ORDERS=26
 
-  CYCLE_SECOND=1
-  CYCLE_THIRD=2
-
   @section=0
-  @cycle=CYCLE_SECOND   #default for old turns and PDF
+  $cycle=CYCLE_SECOND   #default for old turns and PDF
   @banner="xxxxxxx"
   @influence=0
   @turnNumber=0
@@ -273,9 +270,9 @@ class AlamazeTurnParser
      if ( md=line.match(/--\s+Version\s+(\S+)\s+/) )
         @htmlVersion=md[1]
         if @htmlVersion[0] == '1'
-           @cycle=CYCLE_SECOND
+           $cycle=CYCLE_SECOND
         elsif @htmlVersion[0] == '2'
-           @cycle=CYCLE_THIRD
+           $cycle=CYCLE_THIRD
         else
            printf("UNKNOWN VERSION (%s)\n", @htmlVersion)
         end
@@ -555,7 +552,7 @@ class AlamazeTurnParser
   end 
 
   def collectArtifactStatus(line)
-     case @cycle
+     case $cycle
      when CYCLE_SECOND
         collectArtifactStatusSecondCycle(line)
      when CYCLE_THIRD
@@ -596,7 +593,7 @@ class AlamazeTurnParser
   end
 
   def collectArtifactRecon(line)
-     case @cycle
+     case $cycle
      when CYCLE_SECOND
         collectArtifactReconSecondCycle(line)
      when CYCLE_THIRD
@@ -780,7 +777,7 @@ class AlamazeTurnParser
   end
 
   def collectMilitaryRecon(line)
-     case @cycle
+     case $cycle
      when CYCLE_SECOND
         collectMilitaryReconSecondCycle(line)
      when CYCLE_THIRD
@@ -886,7 +883,7 @@ class AlamazeTurnParser
   def collectMilitaryStatus(line)
      #puts "[01234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789]"
      #printf("[%s]\n",line)
-     case @cycle
+     case $cycle
      when CYCLE_SECOND
         collectMilitaryStatusSecondCycle(line)
      when CYCLE_THIRD

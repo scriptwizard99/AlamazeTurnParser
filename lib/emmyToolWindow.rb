@@ -32,6 +32,7 @@ class EmmyToolWindow
 
       $curPopType = TkVariable.new
       $curRegName = TkVariable.new
+      $maxEmmyRange=10
 
    def initialize(influence, area=nil)
       @influence=influence
@@ -40,6 +41,10 @@ class EmmyToolWindow
       @curReaction=""
       createWindowParts
       setLocation(area)
+
+      if $cycle = CYCLE_THIRD
+         $maxEmmyRange=9
+      end
    end # initialize
 
    def createWindowParts
@@ -239,7 +244,7 @@ class EmmyToolWindow
    def getInRangeString(distance)
       if (distance == 0)
          return "HERE!"
-      elsif (distance <= 10)
+      elsif (distance <= $maxEmmyRange.to_i)
          return "yes"
       else
          return "no"
@@ -273,6 +278,7 @@ class EmmyToolWindow
       appendText("\nNOTE: assumes worst case, but does not take into account any Staus Quo orders.", $emmyTextBox)
       appendText("\nNOTE: For more accurate predictions, please consult the Frost Lord tool.", $emmyTextBox)
       appendText("\nNOTE: You can find a link to that tool on the Order Entry page.", $emmyTextBox)
+      appendText("\nmaxEmmyRange=#{$maxEmmyRange.to_i}.", $emmyTextBox)
       tagText($emmyTextBox, "yes",   TEXT_TAG_GOOD)
       tagText($emmyTextBox, "HERE!",   TEXT_TAG_GOOD)
       tagText($emmyTextBox, "maybe", TEXT_TAG_WARNING)

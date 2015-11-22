@@ -1,5 +1,13 @@
 Release Notes for the Alamaze Turn Parser
 
+Version 2.0.2
+--------------------------------------------------------------------------------
+- Added the Necromancer (Fix for issue #26)
+  - Abbreviation is NE which used to be Neutral
+  - Neutral changed to NU
+- Changed colors of Necromancer and Tyrant (Fix for issue #27)
+  - Tyrant was dark grey and looked too close to neutral
+
 Version 2.0.1
 --------------------------------------------------------------------------------
 - Lines for Group Movement Plotter do not disappear when changing groups

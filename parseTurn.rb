@@ -22,6 +22,7 @@
 =end
 
 require_relative 'lib/version'
+require_relative 'lib/constants'
 require_relative 'lib/alamazeTurnParser'
 
 filename = ARGV[0]

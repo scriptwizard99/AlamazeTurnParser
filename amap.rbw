@@ -24,13 +24,11 @@
 
 $runRoot=File.dirname($0)
 
-CYCLE_SECOND=1
-CYCLE_THIRD=2
 
-$cycle=CYCLE_SECOND
 
 require 'tk'
 require_relative 'lib/version'
+require_relative 'lib/constants'
 require_relative 'lib/regions'
 require_relative 'lib/emmyTool'
 require_relative 'lib/emmyToolWindow'
@@ -45,6 +43,7 @@ require_relative 'lib/battle'
 #include Win32
 
 $debug=0
+$cycle=CYCLE_SECOND
 
 BOX_HEIGHT=14
 BOX_WIDTH=BOX_HEIGHT

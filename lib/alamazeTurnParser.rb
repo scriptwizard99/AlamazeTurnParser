@@ -147,6 +147,8 @@ class AlamazeTurnParser
         @section = SECTION_COV_ES_GEN
      elsif ( string.include? "We possess the following artifacts")
         @section = SECTION_ARTIFACTS
+     elsif ( string.include? "This campaign is")
+        @section = SECTION_DONT_CARE
      elsif ( string.upcase.include? "*** GROUPS: ***")
         @section = SECTION_RECON_GROUPS
      elsif ( string.upcase.include? "*** POPULATION CENTERS: ***")

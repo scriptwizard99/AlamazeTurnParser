@@ -8,6 +8,10 @@ Version 2.0.2
 - Changed colors of Necromancer and Tyrant (Fix for issue #27)
   - Tyrant was dark grey and looked too close to neutral
 - Added Help menu which displays a text-only version of the instructions
+- Agents now show up on the EmmyTool so you can make use of the range finder.
+- For 3rd cycle, the Yes/No values of the InRange field have been replaced with 
+  the actual range since the max range is not constant for all emissaries of all
+  kingdoms
 
 Version 2.0.1
 --------------------------------------------------------------------------------

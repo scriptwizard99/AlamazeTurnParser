@@ -119,7 +119,7 @@ class EmmyTool
       powerMin = power * 0.85
       powerMax = power * 1.15
 
-      if @owner == "NE" or @owner == "HU"
+      if @owner == "NU" or @owner == "HU"
          difficultyHigh=@neutralScoreLow
       else
          difficultyHigh=@neutralScoreHigh
@@ -127,7 +127,7 @@ class EmmyTool
 
       oneStep = getChance(@neutralScoreLow.to_f, difficultyHigh, powerMin, powerMax)
 
-      if @owner == "NE"
+      if @owner == "NU"
          twoSteps = CHANCE_NA
       else
          twoSteps = getChance(@neutralScoreLow.to_f * 2.0, difficultyHigh * 2.0, powerMin, powerMax)

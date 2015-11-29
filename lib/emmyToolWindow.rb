@@ -42,9 +42,6 @@ class EmmyToolWindow
       createWindowParts
       setLocation(area)
 
-      if $cycle = CYCLE_THIRD
-         $maxEmmyRange=9
-      end
    end # initialize
 
    def createWindowParts
@@ -242,26 +239,22 @@ class EmmyToolWindow
    end
 
    def getInRangeString(distance)
-      if (distance == 0)
-         return "HERE!"
-      elsif (distance <= $maxEmmyRange.to_i)
-         return "yes"
+      return "HERE!" if (distance == 0)
+
+      if $cycle == CYCLE_THIRD
+         return distance
       else
-         return "no"
+         if (distance <= $maxEmmyRange.to_i)
+            return "yes"
+         else
+            return "no"
+         end
       end
    end
 
-   def fillEmmyWindow(tool)
-
-      appendTextWithTag(" LOC         Emissary Name         Emissary Rank      1Step  2Steps InRange\n", TEXT_TAG_HEADING, $emmyTextBox)
-      appendTextWithTag("-----  ------------------------- -------------------- ------ ------ -------\n", TEXT_TAG_HEADING, $emmyTextBox)
-
-      # get a list of emissary objects
-      myEmissaries = $emissaryList.getEmissaryByKingdom($myKingdom)
-      myEmissaries.each do | emmy |
-         next if emmy.isPolitical == false
+   def showEmmyLine(tool,emmy)
          lastTurn = emmy.getLastTurn
-         next if lastTurn < $currentTurn
+         return if lastTurn < $currentTurn
          #line = emmy.toString( lastTurn)
          rank = emmy.getRank(lastTurn)
          emLoc = emmy.getLocOnTurn(lastTurn)
@@ -272,6 +265,28 @@ class EmmyToolWindow
                       emmy.getName, rank, oneStep, twoSteps, getInRangeString(distance.to_i))
          #line=sprintf("%-60s %-5s %-5s\n", line.chomp, oneStep, twoSteps)
          appendText( line, $emmyTextBox)
+   end
+
+   def fillEmmyWindow(tool)
+
+      if $cycle == CYCLE_THIRD
+         appendTextWithTag(" LOC         Emissary Name         Emissary Rank      1Step  2Steps  Range\n", TEXT_TAG_HEADING, $emmyTextBox)
+      else
+         appendTextWithTag(" LOC         Emissary Name         Emissary Rank      1Step  2Steps InRange\n", TEXT_TAG_HEADING, $emmyTextBox)
+      end
+      appendTextWithTag("-----  ------------------------- -------------------- ------ ------ -------\n", TEXT_TAG_HEADING, $emmyTextBox)
+
+      # get a list of emissary objects
+      myEmissaries = $emissaryList.getEmissaryByKingdom($myKingdom)
+      # show all non-agents
+      myEmissaries.each do | emmy |
+         next if emmy.isPolitical == false
+         showEmmyLine(tool,emmy)
+      end
+      # show all agents
+      myEmissaries.each do | emmy |
+         next if emmy.isPolitical == true
+         showEmmyLine(tool,emmy)
       end
 
       appendText("\nNOTE: The values in this table are only a rough guide. It tends to", $emmyTextBox)

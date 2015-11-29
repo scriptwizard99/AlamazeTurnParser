@@ -87,12 +87,14 @@ class AlamazeTurnParser
   # Red Dragon is 'RD' instead of 'RE'
   # I do not understand why
   def fixBanner(banner)
-     if banner == "RE"
+     if banner == "RED"
         return "RD"
-     elsif banner == "DR"
+     elsif banner == "DRU"
         return "DU"
+     elsif banner == "NEU"
+        return "NU"
      else
-        return banner
+        return banner[0,2]
      end
   end
 
@@ -197,7 +199,7 @@ class AlamazeTurnParser
            else
               (banner,x,x)=string.split
            end
-           @banner=fixBanner(banner[0,2])
+           @banner=fixBanner(banner[0,3])
         end
         @section = SECTION_REGIONAL_SUMMARY
      else
@@ -308,10 +310,10 @@ class AlamazeTurnParser
         if md=line.match(/.*\(AREA (\w+).*OF THE (\w+)/)
            #print md
            area=md[1]
-           banner=fixBanner(md[2][0..1])
+           banner=fixBanner(md[2][0..2])
         elsif md=line.match(/.*OF THE (\w+).*\(AREA (\w+)/)
            area=md[2]
-           banner=fixBanner(md[1][0..1])
+           banner=fixBanner(md[1][0..2])
         else
            puts "ERROR: Cannot parse line\n"
            printf("[%s]\n",line)
@@ -341,7 +343,7 @@ class AlamazeTurnParser
         @emissaryInfo=Hash.new if @emissaryInfo == nil
         if @emissaryInfo[name] == nil
            @emissaryInfo[name]=Hash.new 
-           @emissaryInfo[name]['banner']=fixBanner(md[1][0..1])
+           @emissaryInfo[name]['banner']=fixBanner(md[1][0..2])
            @emissaryInfo[name]['rank']=md[2]
            @emissaryInfo[name]['area']=@politicalTempArea
            @emissaryInfo[name]['source']="Political"
@@ -368,13 +370,13 @@ class AlamazeTurnParser
      end
 
      if @hcInfo[:getVoting]  == true
-        voter=fixBanner(line[16,2])
+        voter=fixBanner(line[16,3])
         vote=line[35..44].strip
         @hcInfo[:votes][voter]=vote
      end
 
      if md=line.match(/THE (\S+).*KINGDOM PUT/)
-        @hcInfo[:proposer]=fixBanner(md[1][0..1])
+        @hcInfo[:proposer]=fixBanner(md[1][0..2])
         @hcInfo[:getIssue]=true
         @hcInfo[:issue] = ""
      end
@@ -425,10 +427,10 @@ class AlamazeTurnParser
      #printf("[%s]\n",line)
 
      if @format == FORMAT_PDF
-        id = line[36] + fixBanner(line[40..41])
+        id = line[36] + fixBanner(line[40..42])
         size = line[60..70].strip
      else
-        id = line[33] + fixBanner(line[37..38])
+        id = line[33] + fixBanner(line[37..39])
         size = line[57..70].strip
      end
 
@@ -498,7 +500,7 @@ class AlamazeTurnParser
         if @popCenterInfo[area] == nil or @popCenterInfo[area]['source']=="Passed"
            @popCenterInfo[area]=Hash.new 
            #@popCenterInfo[area]['region']=""
-           @popCenterInfo[area]['banner']=fixBanner(line[32..33])
+           @popCenterInfo[area]['banner']=fixBanner(line[32..34])
            @popCenterInfo[area]['name']=line[57..78].strip
            @popCenterInfo[area]['type']=line[48..56].strip
            @popCenterInfo[area]['defense']=line[77..85].strip
@@ -510,7 +512,7 @@ class AlamazeTurnParser
         if @popCenterInfo[area] == nil or @popCenterInfo[area]['source']=="Passed"
            @popCenterInfo[area]=Hash.new 
            #@popCenterInfo[area]['region']=""
-           @popCenterInfo[area]['banner']=fixBanner(line[36..37])
+           @popCenterInfo[area]['banner']=fixBanner(line[36..38])
            @popCenterInfo[area]['name']=line[61..73].strip
            @popCenterInfo[area]['type']=line[52..60].strip
            @popCenterInfo[area]['defense']=line[77..85].strip
@@ -545,7 +547,7 @@ class AlamazeTurnParser
         @popCenterInfo=Hash.new if @popCenterInfo == nil
         if @popCenterInfo[area] == nil
            @popCenterInfo[area]=Hash.new 
-           @popCenterInfo[area]['banner']=fixBanner(md[1][0..1])
+           @popCenterInfo[area]['banner']=fixBanner(md[1][0..2])
            @popCenterInfo[area]['type']=md[2]
            @popCenterInfo[area]['source']="Div/Srch"
         end
@@ -704,7 +706,7 @@ class AlamazeTurnParser
                  @popCenterInfo[area]['type']=md[1]
               else
                  @popCenterInfo[area]['type']=md[1].split.last
-                 @popCenterInfo[area]['banner']=fixBanner(md[1].split.first[0,2]) if  @popCenterInfo[area]['banner'] == nil
+                 @popCenterInfo[area]['banner']=fixBanner(md[1].split.first[0,3]) if  @popCenterInfo[area]['banner'] == nil
               end
               @popCenterInfo[area]['source']="Passed"
            end
@@ -759,7 +761,7 @@ class AlamazeTurnParser
      line.gsub!(',','')
      (region,area)=line.split
      return if area =~ /\d/
-     banner=fixBanner(line[19,2])
+     banner=fixBanner(line[19,3])
      name=line[30..40].strip
      type=line[40..44].strip
      (defense,census,food,gold,other)=line[45..line.size].split
@@ -809,7 +811,7 @@ class AlamazeTurnParser
      if( id.size == 3 )
         @tempGroupInfo = Hash.new
         @tempGroupInfo[:id]=id
-        @tempGroupInfo[:banner]=fixBanner(id[1,2])
+        @tempGroupInfo[:banner]=fixBanner(id[1,3])
         @tempGroupInfo[:area]=area
         @tempGroupInfo[:size]=brigs
         line=rest.strip
@@ -862,7 +864,7 @@ class AlamazeTurnParser
      if( id.size == 3 )
         @tempGroupInfo = Hash.new
         @tempGroupInfo[:id]=id
-        @tempGroupInfo[:banner]=fixBanner(id[1,2])
+        @tempGroupInfo[:banner]=fixBanner(id[1,3])
         @tempGroupInfo[:area]=area
         @tempGroupInfo[:size]=brigs
 
@@ -899,7 +901,7 @@ class AlamazeTurnParser
         groupID="#{num[0]}#{kingdom[0,2]}"
         @tempGroupInfo = Hash.new
         @tempGroupInfo[:id]=groupID
-        @tempGroupInfo[:banner]= fixBanner(kingdom[0,2])
+        @tempGroupInfo[:banner]= fixBanner(kingdom[0,3])
      end
     
      
@@ -945,7 +947,7 @@ class AlamazeTurnParser
         groupID="#{num[0]}#{kingdom[0,2]}"
         @tempGroupInfo = Hash.new
         @tempGroupInfo[:id]=groupID
-        @tempGroupInfo[:banner]= fixBanner(kingdom[0,2])
+        @tempGroupInfo[:banner]= fixBanner(kingdom[0,3])
      end
      if( line.include? "SIZE:" )
 #       puts line
@@ -1031,7 +1033,7 @@ class AlamazeTurnParser
      return if rank.empty?
      name = line[20,22].strip
      (x,kingdom,x,x3,area,x4)=line[43..line.size].split
-     @banner=fixBanner(kingdom[0,2]) if rank == "KING" or rank == "REGENT" or rank == "QUEEN"
+     @banner=fixBanner(kingdom[0,3]) if rank == "KING" or rank == "REGENT" or rank == "QUEEN"
      if rank == "CONSUL"
         #@banner="AN" if line.match(/ANCIENT ONES/)
         @banner="AN" 
@@ -1052,7 +1054,7 @@ class AlamazeTurnParser
 
      # We can pull some population center information from these lines as well.
      md=line.match(/.* THE (.*) AT (\w\w) IN \w+/)
-     pcBanner=fixBanner(md[1][0..1])
+     pcBanner=fixBanner(md[1][0..2])
      pcType=md[1].split.last
      area=md[2]
      @popCenterInfo=Hash.new if @popCenterInfo == nil
@@ -1073,12 +1075,12 @@ class AlamazeTurnParser
      #printf("[%s]\n",line)
 
      if @format == FORMAT_PDF
-        banner = fixBanner(line[5,2])
+        banner = fixBanner(line[5,3])
         rank = line[9..23].strip
         name = line[24..45].strip
         area = line[46,2]
      else
-        banner = fixBanner(line[10..11])
+        banner = fixBanner(line[10..12])
         rank = line[14..28].strip
         name = line[29..50].strip
         area = line[51..52]

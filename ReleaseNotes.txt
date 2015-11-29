@@ -7,6 +7,7 @@ Version 2.0.2
   - Neutral changed to NU
 - Changed colors of Necromancer and Tyrant (Fix for issue #27)
   - Tyrant was dark grey and looked too close to neutral
+- Added Help menu which displays a text-only version of the instructions
 
 Version 2.0.1
 --------------------------------------------------------------------------------

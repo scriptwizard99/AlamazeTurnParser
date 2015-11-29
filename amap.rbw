@@ -71,6 +71,8 @@ TEXT_TAG_WARNING='warning'
 TEXT_TAG_WARNING2='warning2'
 TEXT_TAG_DANGER='danger'
 
+HELP_FILE='docs/TurnParserInstructions.txt'
+
 $kingdomColors = {
     'AM' => 'green',
     'AN' => '#35d5ff',
@@ -1222,6 +1224,15 @@ def highlightTag(tag, clearOtherHighlights)
                         'outline' => BOX_OUTLINE_HIGHLIGHTED)
                         #'fill' => 'green')
    $canvas.raise($currentTopTag)
+end
+
+def showInstructions
+   clearText
+   unHighlight
+   appendTextWithTag("Alamaze Turn Parser Instructions\n\n",TEXT_TAG_TITLE)
+   helpFile="#{$runRoot}/#{HELP_FILE}"
+   appendText( File.read(helpFile) )
+   $textBox.focus
 end
 
 def showPopCenterChanges
@@ -2472,6 +2483,16 @@ def setupMenus(root)
                 'menu'  => report_menu,
                 'label' => "Reports")
    
+
+   help_menu = TkMenu.new(root)
+   help_menu.add('command',
+                 'label'     => "Instructions",
+                 'command'   => proc { showInstructions } )
+   menu_bar.add('cascade',
+                'menu'  => help_menu,
+                'label' => "Help")
+   
+
    root.menu(menu_bar)
 end
 

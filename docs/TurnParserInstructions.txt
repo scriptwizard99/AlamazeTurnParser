@@ -1,0 +1,139 @@
+This document contains general instructions for running the Turn Parser tool for Alamaze turn results. However, it is a text-only version of
+the real instructions that can be found here:
+
+http://fallofromegame.com/alamazeorders/downloads/TurnParserInstructions.doc
+
+
+Loading in Data
+---------------------------------------------------------------------
+If you have never used it before, you will want to start parsing the turns for one of your games. I'll assume you have all of the PDF  or HTML turn results saved off in a separate directory for each game (not that it matters). Use the File->Parse... menu option to parse in a turn.
+
+Just select Parse and then navigate to your *R0.pdf or *R0.html file. Once it is done, you should probably see four population centers appear on the map (the ones you start with in that game).  Repeat that process until you get all of the results you currently have parsed in. Then select File->Save and put the saved output somewhere. 
+
+Later, when you get your next turn and want to parse it in too, you do NOT have to re-parse the old turns. Instead, select File->Open.. and find the file you saved earlier. The map should populate with all the pretty little population centers you saw before. Now, select File->Parse.. and navigate to your latest results. Don't forget to save afterwards. 
+
+Here is a link to a YouTube video that demonstrates parsing more than one file at a time.
+
+https://youtu.be/MOnJxeIBoCg?list=PLCzjB_C2_gQ5kqfmEHrnRcuGlxQS-_36O
+
+Note that New.. and Close do the same thing (clear the map and data so you can load in or start parsing in a new or the same game). 
+
+
+So let's talk about what this tool can do once you have parsed your turns.
+
+Click on a Population Center
+---------------------------------------------------------------------
+Clicking on a population center icon on the map will generate a report in the Text Output window showing the stats of the PC as well as list any emissaries and armies that are there. Note that this output is directly affected by the HISTORY button to the right.
+
+Show Current Turn Only
+As it implies, the only data in this report will what was gleaned from the current turn results. In some instances, that will be nothing. Current information is shown in a normal, black font. The 'Trn' column indicates the current turn. The 'Source' column is just a clue on where that data came from in the turn results. 
+
+Show Last Known Information
+If this button is selected, the report will contain not only the current turn's info (if any), but the latest bits of old information about the PC, emissaries, and armies. The non-current (or stale) information is shown in light blue so as not to get it confused with current information. 
+By last known, we mean just that. For example, say we have information for a given emissary in that population center for several turns, only the last one will be shown. That is also why the first column indicates which turn that row's worth of info is from.
+
+Show All History
+This setting will generate a row of text for every turn you have information on the given pc as well as any emissaries or armies that were ever there.  If you are very late in the game, this can be quite a lot of date. Is it useful? It might be, so it is there. 
+The Highlight List Boxes
+There are three list boxes toward the bottom/middle of the right panel of the main display. They will highlight areas on the map as well as generate data in the Text Output window. Not that you must DOUBLE-CLICK on the values in the list boxes. (that is a bug we are calling a feature right now )
+
+Kingdom
+This listbox is populated with only the kingdoms the parser has pulled out of your turn results ( as opposed to a kingdom that showed up in your turn results but was not in a section that the parser extracted). 
+Double clicking on one of the kingdoms there will highlight (in red) every area of the map you have ever seen stuff from that kingdom. In the Text Output window, you will see the last known information about every pc, emissary, and group for that kingdom that have ever been parsed out of your turns. 
+
+Army
+Similar to the Kingdom listbox, this one is populated the the ID of every group from every kingdom that have shown up in your turns.  Double clicking on one will show you the entire history of that unit, regardless of area. On the Zoomed Out map, you will also see arrows showing the unit moving from one location to the next. Note that these arrows are just a straight line between the areas, not the path the unit followed. 
+
+Emissary
+Similar to the Army listbox, this one is populated with every emissary you've seen. Note that the kingdom name is prepended to each emissary name to help tell them apart. (e.g. the Troll envoy Drooler would show up as “TR-DROOLER”). Double clicking on one of these  will generate the entire known history of that emissary as well as draw arrows on the map.
+
+
+Reports Menu
+---------------------------------------------------------------------
+What's the point of parsing the turn results and keeping historical data? So that you can process that data and generate useful or interesting reports.
+
+Region Stats
+This button generates a report on all of the regions and the population centers within. The goal was to show you exactly what percentage you controlled, but it only goes off of what you have seen. (eg if you have one village in a region and know of no other pcs in that region, it would say 100% control. And that is just silly. So it currently does not show % controlled. Look on your regular turn results for that).
+
+All Groups
+This button does two things. First, it causes the icons for all groups (with current info) to be displayed on the map. The other thing it does is report the last known information on all known groups.
+
+All Artifacts
+This generates a report listing the latest information on every artifact that was parsed out of your turn results. Very useful for looking up the short name of an artifact. Note that it only pulls information from recon results and the artifacts you have owned. That is, it does not currently pull out anything from divination reports or the Unusual Sighting text itself.
+
+Production By Kingdom
+This is a very short (but colorful) report that shows all kingdoms and what you know about their total production. I was tempted to take this out because the Thudargh tool is way better at handling production and predicting how much you'll need in future turns. However, it was pretty so I left it. About all it is really good for is if you are playing warlords/titan and wanted a quick view of how much your various kingdoms are producing, relative to each other.
+
+PopCenters By Region
+This report is also very colorful. For each of the ten regions, it lists all of the known population centers in that region. The row is colored to match the kingdom that pc belongs to.
+
+All Battles
+This is similar to All Groups, except that it lists all battles that it has ever parsed out of all of your turns for this game.
+
+Threatened Production
+This report will list any of your population centers which currently have a foreign army at the door or a foreign emissary in them this turn. (At the moment, it will not alert on an emissary that we know about from an old turn, even if we can logically assume he is still there and a danger). Also, due to line wrap differences between the PDF and HTML reports, emissaries are sometimes missed. This is a bug on the list to be fixed.
+
+Lost/Gained Pop Centers
+This report tries to list any population centers that you lost or gained. Basically, if you controlled it last turn but not this turn, it is lost. If you didn't control it last turn but do now, it is gained. The ones you lost are in red and the ones you gained are in green.
+
+Show Lost/Hired Emissaries
+Same as above, but for emissaries.
+High Council Records
+This report shows the activity of the high council over time. Who has been proposing issues? Which ones are passing? How is everyone voting?
+
+
+Map Menu
+---------------------------------------------------------------------
+There are a number of tools under the map menu.  For instance, the controls to change which map size you want to look at can be found there. 
+
+Zooming
+There are three map sizes. The smallest is accessed via the Zoom Out option. It tends to fit well on your screen if your resolution is not very high. On the other hand, if your screen is set to a very high resolution, it may be too tiny to use. The Zoom In Medium will get you a bigger map, the entire window enlarging to show the whole thing (ie, no scrollbars). If that is not enough for you, then you can Zoom In Big which is the full resolution of the map. The map window, however, is constrained to the size for the Medium map, so you now have scrollbars.
+
+Mark Explored...
+If you click on Map->Mark Explored.., you will get an odd looking window appear. 
+While I could probably parse out exactly where your groups moved and your agents searched, I didn't. Instead, you have a menu where you can enter areas manually.  The easiest way to use this is to copy the areas out of the movement order listed near the end of your turn results. Paste them into the top box and hit enter. At that point, they show up in the right hand list box. Also, those areas are highlighted on the map so you can see if you made a mistake. For any areas you don't want, just move them to the left hand box via the '?' button. That will unhighlight them. When you hit the 'Make it so!” button, that window goes away and the highlighted areas are marked.  The exact marker type depends on the type selected.
+
+Had we picked NoPC, then red dots would have been displayed where the red squares were, as is shown below.
+
+But NoPC is not the only option. You can also select NoUS to indicate that you have searched that area for Unusual Sightings and found none. Use AllClear if you know there is no pop center and no US (ie, your group stopped there and there is nothing).  The US option will place another icon type.
+
+DO NOT FORGET TO SAVE AFTERWARDS.
+
+Manual Entry
+This menu selection will bring up a small window which will allow you to manually add a population center, emissary, or group to the map. That is, you can add them without having to parse a turn. This is good if an ally tells you a PC location and you'd like to see it on the map.
+
+In this example, we have selected to add a Pop Center at area HH. We know it is a village that belongs to the Elf, so we fill in that info as well. If you do not know the name, you can leave that field blank and I'll make one up for you.
+This dialog cheats a little bit in that it reuses the far right entry box. If you have selected Pop Center on the left, then you enter VILLAGE, TOWN, or CITY in the right box. If you had selected Emissary, then you would put that emissary's rank in the right box. Finally, if you had selected Group, then you would put the size in that box. Note that the code checks to make sure you enter something reasonable for pop centers and emissaries, but it does not check group size. You can enter a number (1, 12, 42, etc) or words (BRIGADE, ARMY, etc) there. Actually, you are not limited to standard group sizes. BIG, REALLY BIG, RUN FOR YOUR LIFE, or whatever are all valid.
+
+Group Movement Plotter
+This tool is for people who hate looking up the coordinates for every little square as they enter it into the Order Entry page. I'm lazy and would like to have them all listed out for me. This tool does not tell you how far you can go; it is just there to make filling out the movement order easier.
+Here is a link to a You Tube Video which gives a better description of how to use it.
+
+Toggles
+There are several map components that you can toggle on and off. Why? Because, as useful as they are, they start to clutter up the screen or cover other map items. So we have toggles: Toggle Explored, Toggle Groups, and Toggle Battles. 
+
+Change Kingdom
+There are several reports and such that only make sense from one kingdom's point of view. For example, regional reaction. If you are playing Warlords (ie, you are controlling three kingdoms in a single game), you will want to know which ones are friendly in which regions. The Change Kingdom menu just lets you change that perspective. It has no bearing on the real game and (like everything else about the turn parser) does NOT interact with the Alamaze servers. 
+The other portions of the tool where this applies are the Threatened Population Centers, Lost/Gained PopCenters, and Lost/Hired Emissaries reports and the Emissary Tool.
+
+Right Click Menus
+---------------------------------------------------------------------
+At the moment, there are only a few right-click, context menus available.  Right clicking on a PC will give you options to destroy a PC or change its owner.  You can also right click on exploration markers and unusual sightings.	
+
+Change PC Owner
+Right clicking on the icon of a PC will bring up a menu allowing you to change the PC owner. Seletc this and you get a small dialog where you can enter the abbreviation for a kingdom. Hit Enter and the population center will be updated to show the newly entered owner for this turn. Do not forget to save afterwards.
+
+Destroy PC
+This changes the PC to black with a white X to indicate it has been destroyed.
+
+Delete Explored Marker
+If you right-click on one of the little red NoPC dots, you will see a menu allowing you to delete it. Select that option and it will go away. Do not forget to save afterwards.
+
+Edit Unusual Sightings
+Once you've added an unusual sighting via the Mark Explored dialog, you might want to note is difficulty and what it is. Right click on the US and you get a menu to add those values. Later, when you left click on the US, you get a report for that area (same as when you click on a pop center). At the bottom is information about the US.
+
+Emissary Tool
+---------------------------------------------------------------------
+Surely we have talked about everything, right? No. There is one more little goodie. The first time you click on a pop center, you get yet another window, the Emissary Tool. This tool looks at the population center type, your influence, the regional reaction, and then computes the chances of flipping them one and two steps for all of your emissaries. It also tells you if the emissary is in range of that population center or if it is already there. While these calculations are close, they do not factor in all of the variables that the Lord Frost 320/330 calculator does.  If you want to be absolutely sure a given emissary can take a specific pop center, check his tool. On the other hand, if you just want to get a feel for how your emissaries might fare against an oponent and which ones are in range, then this is the tool for you. 
+Also, if you click on an emissary's row in that window, the pop center he/she is in will be highlighted, thus helping you get a better feel for who is where.
+

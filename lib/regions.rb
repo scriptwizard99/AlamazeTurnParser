@@ -52,7 +52,7 @@ class RegionList
          @list[regNum] = Region.new( regNum,  $regionMap[regNum] )
       end
       @regionLocMap=nil
-      #readRegionBorderFile
+      readRegionBorderFile
    end
 
    def readRegionBorderFile
@@ -85,7 +85,13 @@ class RegionList
       end
       return @list[num]
    end
+   def resetStats
+      @list.keys.each do |regNum|
+         @list[regNum].resetStats
+      end
+   end
    def gatherStats
+      resetStats
       $popCenterList.getAllLocs.each do |area|
          pc = $popCenterList.getPopCenter(area)
          region = pc.getRegion
@@ -147,6 +153,12 @@ class Region
       @popCount[:village]=0
       @turnInfo = Hash.new
       @turnList = nil
+   end
+   def resetStats
+      @popCount[:city] = 0
+      @popCount[:town] = 0
+      @popCount[:village] = 0
+      @estimatedPopulation = 0
    end
    def addPC(type,pop)
       case type[0]

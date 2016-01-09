@@ -72,6 +72,7 @@ TEXT_TAG_WARNING2='warning2'
 TEXT_TAG_DANGER='danger'
 
 HELP_FILE='docs/TurnParserInstructions.txt'
+REVISION_FILE='ReleaseNotes.txt'
 
 $kingdomColors = {
     'AM' => 'green',
@@ -1226,12 +1227,26 @@ def highlightTag(tag, clearOtherHighlights)
    $canvas.raise($currentTopTag)
 end
 
+def highlightRegion(region)
+   appendText("Highlighting region #{region}")
+   highlightTag("REGION-#{region}",true)
+end
+
 def showInstructions
    clearText
    unHighlight
    appendTextWithTag("Alamaze Turn Parser Instructions\n\n",TEXT_TAG_TITLE)
    helpFile="#{$runRoot}/#{HELP_FILE}"
    appendText( File.read(helpFile) )
+   $textBox.focus
+end
+
+def showRevisions
+   clearText
+   unHighlight
+   appendTextWithTag("Alamaze Turn Parser Revision History\n\n",TEXT_TAG_TITLE)
+   revFile="#{$runRoot}/#{REVISION_FILE}"
+   appendText( File.read(revFile) )
    $textBox.focus
 end
 
@@ -2279,11 +2294,16 @@ def deleteTempMarker(area)
 end
 
 def rightClickMarker(x,y,area,marker)
+   region=$regionList.getRegionByArea(area)
    pm = TkMenu.new do
      title 'Actions'
      type  'normal' 
    end
    if marker == 'C' or marker == 'T' or marker == 'V'
+      pm.add('command',
+             'label'     => "Highlight Region",
+             'command'   => proc { highlightRegion region}
+             )
       pm.add('command',
              'label'     => "Change PC Owner...",
              'command'   => proc { changePCOwner area}
@@ -2360,7 +2380,7 @@ def setupMenus(root)
    file_menu.add('command',
                  'label'     => "Exit",
                  'command'   => proc { exit 0} ,
-                 'underline' => 3)
+                 'underline' => 1)
    
    menu_bar.add('cascade',
                 'menu'  => file_menu,
@@ -2488,6 +2508,9 @@ def setupMenus(root)
    help_menu.add('command',
                  'label'     => "Instructions",
                  'command'   => proc { showInstructions } )
+   help_menu.add('command',
+                 'label'     => "Revisions",
+                 'command'   => proc { showRevisions } )
    menu_bar.add('cascade',
                 'menu'  => help_menu,
                 'label' => "Help")
@@ -2496,10 +2519,13 @@ def setupMenus(root)
    root.menu(menu_bar)
 end
 
-def drawBox(canvas,x,y,tag)
+def drawBox(canvas,x,y,tag,loc)
+   region=$regionList.getRegionByArea(loc)
+   #appendText("Loc #{loc} is in region #{region}\n")
    bBox = drawABlock(:big, x,y)
    bBox.addtag(I_AM_A_BOX)
    bBox.addtag(tag)
+   bBox.addtag("REGION-#{region}")
    bBox.bind('1', proc { boxClick tag } )
    bBox.bind('3', proc { markExplored tag } )
    bBox.bind('Enter', proc { $cursorLoc.value = tag.gsub('box','Area') } )
@@ -2507,6 +2533,7 @@ def drawBox(canvas,x,y,tag)
    mBox = drawABlock(:medium, x,y)
    mBox.addtag(I_AM_A_BOX)
    mBox.addtag(tag)
+   mBox.addtag("REGION-#{region}")
    mBox.bind('1', proc { boxClick tag } )
    mBox.bind('3', proc { markExplored tag } )
    mBox.bind('Enter', proc { $cursorLoc.value = tag.gsub('box','Area') } )
@@ -2514,6 +2541,7 @@ def drawBox(canvas,x,y,tag)
    sBox = drawABlock(:small, x,y)
    sBox.addtag(I_AM_A_BOX)
    sBox.addtag(tag)
+   sBox.addtag("REGION-#{region}")
    sBox.bind('1', proc { boxClick tag } )
    sBox.bind('3', proc { markExplored tag } )
    sBox.bind('Enter', proc { $cursorLoc.value = tag.gsub('box','Area') } )
@@ -2527,7 +2555,7 @@ def fillGrid
      for y in 0..25
         l2=('A'.ord+y).chr
         loc="#{l2}#{l1}"
-        (bBox,sBox)= drawBox($canvas,x,y,"box-#{loc}")
+        (bBox,sBox)= drawBox($canvas,x,y,"box-#{loc}",loc)
         $areaList.addBox(loc,sBox,bBox)
         #@MAP[loc]= sBox
      end
@@ -3351,17 +3379,18 @@ end
 #===============================================================================
 begin 
 
-   initVars
    programName="Alamaze Turn Parser GUI (v#{VERSION})"
    $root = TkRoot.new { title programName }
+   appendTextWithTag("#{programName}\n", TEXT_TAG_TITLE)
+   initVars
    bFrame=createMainDisplay($root)
    TkLabel.new(bFrame) do
       textvariable $cursorLoc
       pack { side 'left' }
    end
    setupKingdomBitmaps
+
    
-   appendTextWithTag("#{programName}\n", TEXT_TAG_TITLE)
 
    if defined? ENV['OCRA_EXECUTABLE']
       appendText("OCRA_EXECUTABLE=[#{ENV['OCRA_EXECUTABLE']}]\n")

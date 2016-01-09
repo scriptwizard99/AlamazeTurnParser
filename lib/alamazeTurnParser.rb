@@ -503,7 +503,7 @@ class AlamazeTurnParser
            @popCenterInfo[area]['banner']=fixBanner(line[32..34])
            @popCenterInfo[area]['name']=line[57..78].strip
            @popCenterInfo[area]['type']=line[48..56].strip
-           @popCenterInfo[area]['defense']=line[77..85].strip
+           @popCenterInfo[area]['defense']=line[78..85].strip
            @popCenterInfo[area]['source']="Encounter"
         end
      else
@@ -1221,6 +1221,8 @@ class AlamazeTurnParser
      issue.gsub!(/BY THIS BODY/,"")
      issue.gsub!(/THIS HIGH COUNCIL'S/,"")
      issue.gsub!(/RULER BE/,"")
+     issue.gsub!(/RULER RECEIVE/,"")
+     issue.gsub!(/MOST RESTRICTIVE/,"")
      issue.gsub!(/OFFICIALY/,"")
      issue.gsub!(/OFFICIALLY/,"")
      issue.gsub!(/IMMEDIATELY/,"")

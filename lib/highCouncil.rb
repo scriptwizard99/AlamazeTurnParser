@@ -59,6 +59,7 @@ class HighCouncilIssueList
       tagText($textBox,"DOWN",TEXT_TAG_DANGER)
       tagText($textBox,"EXPELLED",TEXT_TAG_DANGER)
       tagText($textBox,"CONDEMNED",TEXT_TAG_DANGER)
+      tagText($textBox,"SANSCTIONS",TEXT_TAG_DANGER)
    end 
 
    def printHeader

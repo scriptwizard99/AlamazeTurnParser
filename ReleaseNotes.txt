@@ -1,5 +1,14 @@
 Release Notes for the Alamaze Turn Parser
 
+Version 2.1.0
+--------------------------------------------------------------------------------
+- Region borders are GONE! (due to request by Rick)
+- Each population center's right-click context menu now contains a Highlight Region option.
+  Selecting this will cause all of the areas in that region to be highlighted with a red box.
+  So, there are no more ugly white lines on the map, detracting from immersion, 
+  but you can still easily identify the region borders for regions you are in.
+- Minor fix to High Council report to handle a kingdom being denigrated in a region
+
 Version 2.0.2
 --------------------------------------------------------------------------------
 - Added the Necromancer (Fix for issue #26)

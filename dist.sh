@@ -21,7 +21,8 @@ echo "Building dist files for version $version"
 mv parseTurn.exe $distDir/parserCommand-${version}.exe
 mv amap.exe      $distDir/parserGUI-${version}.exe
 
-cp *.rb *.rbw $zipDestDir
+rm -f parserGuiError.txt
+cp *.rb *.rbw *.txt $zipDestDir
 cp -r graphics $zipDestDir
 cp -r docs $zipDestDir
 cp -r data $zipDestDir

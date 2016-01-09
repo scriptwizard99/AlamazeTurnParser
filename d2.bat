@@ -9,5 +9,5 @@ rem = For debug, append --verbose --debug --debug-extract to the end of the comm
 rem ==========================================================================
 
 echo "Creating GUI executable."
-ocra --no-autoload --add-all-core amap.rbw *.rb lib\* data\* graphics\* docs\*.txt c:\ruby193\lib\tcltk
+ocra --no-autoload --add-all-core amap.rbw *.rb lib\* data\* graphics\* docs\*.txt *.txt c:\ruby193\lib\tcltk
 

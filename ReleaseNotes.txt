@@ -1,5 +1,10 @@
 Release Notes for the Alamaze Turn Parser
 
+Version 2.1.0+
+--------------------------------------------------------------------------------
+- Fixed bug processing group recon when nearly everything shows 'masked'
+  Prior to fix, those groups would not show up in the results.
+
 Version 2.1.0
 --------------------------------------------------------------------------------
 - Region borders are GONE! (due to request by Rick)

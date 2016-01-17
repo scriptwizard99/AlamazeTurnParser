@@ -797,13 +797,22 @@ class AlamazeTurnParser
      #printf("[%s]\n",line)
      (id,brigs,reg,area,rest)=line.split(' ',5)
 
-     if line.include? "INVISIBLE"
+     if line.include? "INVISIBLE" 
         area=rest.split.last
         id = "#{area}?"
         @militaryInfo[id] = Hash.new if @militaryInfo[id] == nil
         @militaryInfo[id][:area] = area
         @militaryInfo[id][:banner] = "??"
         @militaryInfo[id][:size] = "Invisible"
+        @militaryInfo[id][:source] = "Recon"
+        return
+     end
+
+     if line[56,6] == 'MASKED'
+        @militaryInfo[id] = Hash.new if @militaryInfo[id] == nil
+        @militaryInfo[id][:area] = area
+        @militaryInfo[id][:banner] = fixBanner(id[1,3])
+        @militaryInfo[id][:size] = "Masked"
         @militaryInfo[id][:source] = "Recon"
         return
      end
@@ -860,6 +869,16 @@ class AlamazeTurnParser
         @militaryInfo[id][:source] = "Recon"
         return
      end
+
+     if line[56,6] == 'MASKED'
+        @militaryInfo[id] = Hash.new if @militaryInfo[id] == nil
+        @militaryInfo[id][:area] = area
+        @militaryInfo[id][:banner] = fixBanner(id[1,3])
+        @militaryInfo[id][:size] = "Masked"
+        @militaryInfo[id][:source] = "Recon"
+        return
+     end
+
 
      if( id.size == 3 )
         @tempGroupInfo = Hash.new

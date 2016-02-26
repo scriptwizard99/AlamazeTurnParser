@@ -82,6 +82,8 @@ class AlamazeTurnParser
   @tempArtifactInfo=nil
   @htmlVersion=nil
 
+  @productionColumns=9  # 2nd cycle and early 3rd cycle format. Later ones have 10
+
   # EVERY kingdom except the Red Dragon is abbreviated
   # by the first two letters of their name. But the 
   # Red Dragon is 'RD' instead of 'RE'
@@ -724,6 +726,20 @@ class AlamazeTurnParser
      return if line.include? "CENSUS"
      return if line.include? "OUR KINGDOM"
      return if line.include? "POSSESSES:"  #3rd
+
+     if line.include? "BASE     ADJUSTED"
+        @productionColumns=10 
+        return
+     end
+
+     if @productionColumns==9  
+        collectProduction1(line, isForecast)
+     else
+        collectProduction2(line, isForecast)
+     end
+  end
+
+  def collectProduction1(line, isForecast)
      line.gsub!(',','')
      #puts "[01234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789]"
      #printf("[%s]\n",line)
@@ -752,6 +768,37 @@ class AlamazeTurnParser
         @ownedPopCenters.push area
      end
   end
+
+  def collectProduction2(line, isForecast)
+     line.gsub!(',','')
+     #puts "[01234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789]"
+     #printf("[%s]\n",line)
+     (region,area)=line.split
+     return if area =~ /\d/
+
+     name=line[16..35].strip
+     type=line[35..45].strip
+     (defenseBase,defenseAdj,census,food,gold,other)=line[46..line.size].split
+
+     @popCenterInfo=Hash.new if @popCenterInfo == nil
+     @popCenterInfo[area]=Hash.new if @popCenterInfo[area] == nil
+     @popCenterInfo[area]['region']=region
+     @popCenterInfo[area]['name']=name
+     @popCenterInfo[area]['type']=type
+     @popCenterInfo[area]['defense']=defenseAdj
+     @popCenterInfo[area]['census']=census
+     @popCenterInfo[area]['food']=food
+     @popCenterInfo[area]['gold']=gold
+     @popCenterInfo[area]['other']=other
+     @popCenterInfo[area]['source']="Self"
+
+     if isForecast
+        @popCenterInfo[area]['banner']=@banner
+        @ownedPopCenters=Array.new if @ownedPopCenters.nil?
+        @ownedPopCenters.push area
+     end
+  end
+
 
   # Process the section of the recon status that covers population centers
   #     1    CD  WITCHLORD  LORETHANE  CITY 23,112  55,200  -4,480  16,800      NA

@@ -1,9 +1,13 @@
 Release Notes for the Alamaze Turn Parser
 
-Version 2.1.0+
+Version 2.2.0
 --------------------------------------------------------------------------------
 - Fixed bug processing group recon when nearly everything shows 'masked'
   Prior to fix, those groups would not show up in the results.
+- Updated to handle the extra defense columns listed for population centers
+  in the production section. Since I was rushing this fix out, I am recording
+  the Adjusted Defense and throwing away the Base Defense. The reports have not
+  changed. Know that the Defense listed is the Adjusted Defense.
 
 Version 2.1.0
 --------------------------------------------------------------------------------

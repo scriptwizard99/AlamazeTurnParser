@@ -82,7 +82,7 @@ class AlamazeTurnParser
   @tempArtifactInfo=nil
   @htmlVersion=nil
 
-  @productionColumns=9  # 2nd cycle and early 3rd cycle format. Later ones have 10
+  @productionColumns='ORIG'  # 2nd cycle and early 3rd cycle format. Later ones have 10
 
   # EVERY kingdom except the Red Dragon is abbreviated
   # by the first two letters of their name. But the 
@@ -273,6 +273,7 @@ class AlamazeTurnParser
   # All we need from the first part of the turn results
   # is the turn number
   def processPreamble(line)
+     @productionColumns='ORIG' 
      if ( md=line.match(/--\s+Version\s+(\S+)\s+/) )
         @htmlVersion=md[1]
         if @htmlVersion[0] == '1'
@@ -728,11 +729,11 @@ class AlamazeTurnParser
      return if line.include? "POSSESSES:"  #3rd
 
      if line.include? "BASE     ADJUSTED"
-        @productionColumns=10 
+        @productionColumns='ADJUSTED' 
         return
      end
 
-     if @productionColumns==9  
+     if @productionColumns == 'ORIG'
         collectProduction1(line, isForecast)
      else
         collectProduction2(line, isForecast)

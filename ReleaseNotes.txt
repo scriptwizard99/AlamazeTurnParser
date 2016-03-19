@@ -1,5 +1,11 @@
 Release Notes for the Alamaze Turn Parser
 
+Version 2.2.1
+--------------------------------------------------------------------------------
+- Found that some of the reports of the Choosing do not have version numbers in
+  the html results. Updated code to notice "Alamaze The Choosing" in the results
+  and decide that it is 3rd cycle.
+
 Version 2.2.0
 --------------------------------------------------------------------------------
 - Fixed bug processing group recon when nearly everything shows 'masked'

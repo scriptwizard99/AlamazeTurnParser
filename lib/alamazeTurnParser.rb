@@ -285,6 +285,10 @@ class AlamazeTurnParser
         end
      end
 
+     if ( line.match(/Alamaze.+The.+Choosing/) )
+        $cycle=CYCLE_THIRD
+     end
+
      if ( md=line.match(/<title>(\S+)<.title>/) )
        info=md[1].match(/(\D+)(\d+)R(\d+)/)
        @banner=info[1]
